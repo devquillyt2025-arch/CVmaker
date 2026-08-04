@@ -21,7 +21,7 @@ export default function ElegantSerifTemplate({ data }: TemplateProps) {
 
   return (
     <div style={{ fontFamily: serif, color: '#2b2b2b', padding: '50px 64px', fontSize: 12.5, lineHeight: 1.6 }}>
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'left' }}>
         <h1 style={{ fontSize: 36, fontStyle: 'italic', letterSpacing: 2, color: BURGUNDY, margin: 0, fontWeight: 500 }}>
           {fullName(contact)}
         </h1>
@@ -32,7 +32,7 @@ export default function ElegantSerifTemplate({ data }: TemplateProps) {
       {data.summary && (
         <>
           <Ornament title="Profile" />
-          <p style={{ margin: 0, textAlign: 'center', fontStyle: 'italic', color: '#444' }}>{data.summary}</p>
+          <p style={{ margin: 0, textAlign: 'left', fontStyle: 'italic', color: '#444' }}>{data.summary}</p>
         </>
       )}
 
@@ -58,7 +58,7 @@ export default function ElegantSerifTemplate({ data }: TemplateProps) {
         <>
           <Ornament title="Education" />
           {data.education.map((e) => (
-            <div key={e.id} style={{ marginBottom: 7, textAlign: 'center' }}>
+            <div key={e.id} style={{ marginBottom: 7, textAlign: 'left' }}>
               <div style={{ fontWeight: 700 }}>{degreeLine(e)}</div>
               <div style={{ fontStyle: 'italic', color: '#555' }}>{[e.institution, e.location].filter(Boolean).join(', ')} · {range(e.startDate, e.endDate, e.currentlyStudying)}</div>
             </div>
@@ -83,7 +83,7 @@ export default function ElegantSerifTemplate({ data }: TemplateProps) {
       {has(data.skills) && (
         <>
           <Ornament title="Skills" />
-          <p style={{ margin: 0, textAlign: 'center', fontStyle: 'italic' }}>{data.skills.map((s) => s.name).join(',  ')}</p>
+          <p style={{ margin: 0, textAlign: 'left', fontStyle: 'italic' }}>{data.skills.map((s) => s.name).join(',  ')}</p>
         </>
       )}
     </div>

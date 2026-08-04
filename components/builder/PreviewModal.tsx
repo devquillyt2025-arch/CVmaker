@@ -2,41 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ResumeData, TemplateId } from '@/lib/types';
+import type { StoreState } from '@/lib/store/slices/types';
+import ResumePreview from './ResumePreview';
 
 interface Props {
   data: ResumeData;
   templateId: TemplateId;
-  accentColor?: string;
+  sectionOrder?: string[];
+  hiddenSections?: string[];
+  builderDesign?: StoreState['builderDesign'];
   onClose: () => void;
   onDownload: () => void;
 }
 
-export default function PreviewModal({ data, templateId, accentColor, onClose, onDownload }: Props) {
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const urlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    import('@/lib/resumePdf')
-      .then(({ generateBuilderPdfBlob }) => generateBuilderPdfBlob(data, templateId, undefined, accentColor))
-      .then(blob => {
-        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-        const url = URL.createObjectURL(blob);
-        urlRef.current = url;
-        setPdfUrl(url);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('PDF preview error', err);
-        setLoading(false);
-      });
-
-    return () => {
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    };
-  }, [data, templateId, accentColor]);
-
+export default function PreviewModal({ data, templateId, sectionOrder, hiddenSections, builderDesign, onClose, onDownload }: Props) {
   // Close on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -81,21 +60,17 @@ export default function PreviewModal({ data, templateId, accentColor, onClose, o
           </div>
         </div>
 
-        {/* PDF iframe */}
-        <div className="flex-1 bg-gray-200 relative">
-          {loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
-              <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-indigo-600 border-t-transparent" />
-              <p className="text-sm text-gray-500">Generating PDF…</p>
-            </div>
-          )}
-          {pdfUrl && !loading && (
-            <iframe
-              src={pdfUrl}
-              className="w-full h-full border-0"
-              title="PDF Preview"
+        {/* HTML Preview */}
+        <div className="flex-1 bg-gray-200 relative overflow-y-auto overflow-x-hidden flex justify-center py-8">
+          <div className="origin-top" style={{ transform: 'scale(0.95)' }}>
+            <ResumePreview
+              data={data}
+              templateId={templateId}
+              sectionOrder={sectionOrder}
+              hiddenSections={hiddenSections}
+              builderDesign={builderDesign}
             />
-          )}
+          </div>
         </div>
       </div>
     </div>

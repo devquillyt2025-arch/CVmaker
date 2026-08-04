@@ -238,3 +238,24 @@ body {
 .hover-scrollbar:hover::-webkit-scrollbar-thumb {
   visibility: visible;
 }
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Ensure the preview container doesn't have borders/shadows in the PDF */
+  .print-preview-container {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Hide page margins injected by browsers where possible */
+  @page {
+    margin: 0mm;
+    size: A4;
+  }
+}

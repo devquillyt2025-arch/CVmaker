@@ -22,6 +22,7 @@ import { useUIStore } from '@/lib/store/useUIStore';
 import { useAutosaveSync } from '@/hooks/useAutosaveSync';
 import { useResumeStats } from '@/hooks/useResumeStats';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useReactToPrint } from 'react-to-print';
 import EditorPanel from '@/components/builder/EditorPanel';
 import ResumePreview from '@/components/builder/ResumePreview';
 import PreviewModal from '@/components/builder/PreviewModal';
@@ -380,6 +381,7 @@ export default function BuilderPage() {
   });
 
   const workerRef = useRef<Worker | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../../lib/workers/score.worker.ts', import.meta.url));
@@ -399,24 +401,22 @@ export default function BuilderPage() {
     }
   }, [debouncedData, jdText]);
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    setDlError('');
-    try {
-      const { generateBuilderPdfBlob } = await import('@/lib/resumePdf');
-      const blob = await generateBuilderPdfBlob(debouncedData, templateId, sectionOrder, accentColor);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fullName.replace(/\s+/g, '_')}_FolioX.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      setDlError(e instanceof Error ? e.message : 'Download failed');
-    } finally {
+  const handleDownload = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: `${fullName.replace(/\s+/g, '_')}_FolioX`,
+    onBeforePrint: () => {
+      setDownloading(true);
+      setDlError('');
+      return Promise.resolve();
+    },
+    onAfterPrint: () => {
       setDownloading(false);
+    },
+    onPrintError: (e) => {
+      setDownloading(false);
+      setDlError(e?.message || 'Print failed');
     }
-  };
+  });
 
   if (!_hasHydrated) {
     return (
@@ -595,7 +595,7 @@ export default function BuilderPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[13px] text-slate-500 dark:text-gray-400">
-                  <Link href="/dashboard" className="hover:text-slate-900 dark:hover:text-gray-100 transition-colors">← Resume Builder</Link>
+                  <span className="font-semibold">Resume Builder</span>
                   <span className="mx-2 text-slate-300 dark:text-gray-600">&gt;</span>
                   <span className="font-medium text-slate-900 dark:text-gray-100">{fullName}</span>
                 </p>
@@ -646,16 +646,18 @@ export default function BuilderPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="mx-auto flex min-h-full max-w-[794px] justify-center"
+              className="flex min-h-full max-w-[794px] justify-start"
             >
-              <div className="mx-auto origin-top" style={{ transform: `scale(${builderDesign.zoom})` }}>
-                <ResumePreview
-                  data={debouncedData}
-                  templateId={templateId}
-                  sectionOrder={sectionOrder}
-                  hiddenSections={hiddenSections}
-                  builderDesign={builderDesign}
-                />
+              <div className="origin-top-left" style={{ transform: `scale(${builderDesign.zoom})` }}>
+                <div ref={printRef}>
+                  <ResumePreview
+                    data={debouncedData}
+                    templateId={templateId}
+                    sectionOrder={sectionOrder}
+                    hiddenSections={hiddenSections}
+                    builderDesign={builderDesign}
+                  />
+                </div>
               </div>
             </motion.div>
           </div>
@@ -668,9 +670,11 @@ export default function BuilderPage() {
 
       {showModal && (
         <PreviewModal
-          data={data}
+          data={debouncedData}
           templateId={templateId}
-          accentColor={accentColor}
+          sectionOrder={sectionOrder}
+          hiddenSections={hiddenSections}
+          builderDesign={builderDesign}
           onClose={() => setShowModal(false)}
           onDownload={() => {
             setShowModal(false);

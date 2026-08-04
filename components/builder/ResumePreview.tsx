@@ -23,6 +23,7 @@ const ResumePreview = memo(function ResumePreview({
 }: ResumePreviewProps) {
   return (
     <div
+      className="print-preview-container"
       style={{
         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.07), 0 10px 40px -4px rgba(0,0,0,0.10)',
         border: '1px solid rgba(0,0,0,0.06)',

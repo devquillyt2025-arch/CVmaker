@@ -11,7 +11,7 @@ export default function ClassicTemplate({ data }: TemplateProps) {
     fontSize: 12,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    textAlign: 'center',
+    textAlign: 'left',
     fontWeight: 700,
     color: '#111',
     borderTop: '1px solid #111',
@@ -24,7 +24,7 @@ export default function ClassicTemplate({ data }: TemplateProps) {
 
   return (
     <div style={{ fontFamily: serif, color: '#111', padding: '44px 56px', fontSize: 12.5, lineHeight: 1.5 }}>
-      <div style={{ textAlign: 'center', marginBottom: 4 }}>
+      <div style={{ textAlign: 'left', marginBottom: 4 }}>
         <h1 style={{ fontFamily: serif, fontSize: 30, fontWeight: 400, letterSpacing: 1, margin: 0 }}>
           {fullName(contact)}
         </h1>
@@ -42,7 +42,7 @@ export default function ClassicTemplate({ data }: TemplateProps) {
       {has(data.skills) && (
         <>
           <div style={sectionTitle}>Skills</div>
-          <p style={{ margin: 0, textAlign: 'center' }}>{data.skills.map((s) => s.name).join(', ')}</p>
+          <p style={{ margin: 0, textAlign: 'left' }}>{data.skills.map((s) => s.name).join(', ')}</p>
         </>
       )}
 

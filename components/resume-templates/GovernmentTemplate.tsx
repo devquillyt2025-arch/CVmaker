@@ -22,7 +22,7 @@ export default function GovernmentTemplate({ data }: TemplateProps) {
   return (
     <div style={{ fontFamily: serif, color: '#000', padding: '44px 54px', fontSize: 12.5, lineHeight: 1.45 }}>
       {/* Name block */}
-      <div style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '8px 0', textAlign: 'center', marginBottom: 14 }}>
+      <div style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '8px 0', textAlign: 'left', marginBottom: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{fullName(contact)}</div>
         {contact.jobTitle && <div style={{ fontSize: 12 }}>{contact.jobTitle}</div>}
       </div>
