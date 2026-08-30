@@ -22,6 +22,12 @@ h1, h2, h3 {
 
 /* ── Landing page theme tokens ─────────────────────────────────────────────── */
 :root {
+  /* Brand gradient and its glow are theme-invariant — they read on both
+     backgrounds, so the .dark block below deliberately does not override them. */
+  --lp-grad:             linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%);
+  --lp-grad-glow:        0 0 18px rgba(108,99,255,0.40);
+  --lp-grad-glow-hover:  0 0 28px rgba(108,99,255,0.65);
+
   --lp-bg:               linear-gradient(135deg, #f0f0ff 0%, #fafafa 50%, #f0f7ff 100%);
   --lp-card-bg:          #ffffff;
   --lp-free-card-bg:     #f9fafb;
@@ -101,6 +107,96 @@ h1, h2, h3 {
   --lp-login-hover:      #c4b5fd;
   --lp-cta-shadow:       0 0 30px rgba(108,99,255,0.40);
   --lp-cta-shadow-hover: 0 0 44px rgba(108,99,255,0.65);
+}
+
+/* ── Landing page components ───────────────────────────────────────────────
+   Hover states live here rather than in React state. Every one of these used
+   to be a `useState(hovered)` or an `onMouseEnter` that wrote to element.style,
+   which costs a re-render (or a layout-thrashing style write) per pointer move
+   across seven elements — for something the browser does for free. Keeping them
+   as CSS is also what lets the landing page stay a server component. */
+
+.lp-grad-text {
+  background: var(--lp-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Nav pill: the gradient "Open Builder" button. */
+.lp-cta-sm {
+  background: var(--lp-grad);
+  box-shadow: var(--lp-grad-glow);
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.lp-cta-sm:hover {
+  box-shadow: var(--lp-grad-glow-hover);
+  transform: scale(1.03);
+}
+
+/* Hero primary CTA. */
+.lp-cta-lg {
+  background: var(--lp-grad);
+  box-shadow: var(--lp-cta-shadow);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.lp-cta-lg:hover {
+  box-shadow: var(--lp-cta-shadow-hover);
+  transform: scale(1.04);
+}
+
+/* Hero secondary CTA and the nav's text link. */
+.lp-btn-ghost {
+  border: 1px solid var(--lp-pill-border);
+  background: var(--lp-pill-bg);
+  color: var(--lp-accent-text);
+  transition: background .18s ease;
+}
+.lp-btn-ghost:hover {
+  background: var(--lp-chip-bg-hover);
+}
+
+.lp-navlink {
+  color: var(--lp-login-color);
+  border: 1px solid transparent;
+  transition: border-color .2s ease, color .2s ease;
+}
+.lp-navlink:hover {
+  border-color: var(--lp-pill-border);
+  color: var(--lp-login-hover);
+}
+
+.lp-chip {
+  color: var(--lp-accent-text);
+  background: var(--lp-chip-bg);
+  border: 1px solid var(--lp-pill-border);
+  box-shadow: var(--lp-chip-shadow);
+  transition: background .15s ease;
+}
+.lp-chip:hover {
+  background: var(--lp-chip-bg-hover);
+}
+
+/* Feature cards. The free/paid variants differ only in these four custom
+   properties, which the component sets inline — the hover behaviour is shared. */
+.lp-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.lp-card:hover {
+  border-color: var(--card-border-hover);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-4px);
+}
+
+/* Tagline cross-fade. `data-visible` is flipped by the rotator. */
+.lp-tagline {
+  transition: opacity .35s ease, transform .35s ease;
+}
+.lp-tagline[data-visible='false'] {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 body {
@@ -239,10 +335,86 @@ body {
   visibility: visible;
 }
 
+/* ── Resume bullet lists ───────────────────────────────────────────────────
+   Tailwind's Preflight sets `list-style: none` on every ul/ol. The templates
+   are written expecting markers — each bullet list already reserves the indent
+   with its own `padding-left` — so the glyphs went missing while the hanging
+   indent stayed, which just looks like a broken list.
+
+   Restoring markers inside `.resume-sheet` only: the app's own nav and menu
+   lists should stay unstyled the way Preflight intends. Deliberately not
+   `!important`, so MinimalistMono's inline `list-style-type: '- '` still wins
+   and keeps its dash markers. */
+.resume-sheet ul {
+  list-style: disc outside;
+}
+
+.resume-sheet ol {
+  list-style: decimal outside;
+}
+
+/* ── Resume density ────────────────────────────────────────────────────────
+   Every template hard-codes `line-height` and page padding as inline styles on
+   its own root element, so the Spacing control cannot work through inheritance
+   — these rules have to win against those inline styles, hence `!important`.
+   `> *` is the template root (the sheet's only child); line-height then cascades
+   to the rest of the document, since inner nodes rarely set their own. */
+.resume-sheet[data-spacing='compact'] > * {
+  line-height: 1.3 !important;
+  padding: 30px 40px !important;
+}
+
+.resume-sheet[data-spacing='balanced'] > * {
+  line-height: 1.5 !important;
+}
+
+.resume-sheet[data-spacing='airy'] > * {
+  line-height: 1.75 !important;
+  padding: 56px 64px !important;
+}
+
+/* Font picker. Templates set `font-family` inline on their root *and* on
+   individual headings, so this has to reach every descendant to take effect.
+   `--resume-font` is set inline by ResumeDoc from FONT_CSS_MAP. */
+.resume-sheet[data-font],
+.resume-sheet[data-font] * {
+  font-family: var(--resume-font) !important;
+}
+
 @media print {
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* ── Pagination ──────────────────────────────────────────────────────────
+     A resume longer than one page is a single continuous block, so without
+     these rules the browser breaks wherever the page happens to run out: a job
+     title gets separated from its bullets, a lone bullet is stranded at the top
+     of page 2, a section heading sits alone at the foot of page 1.
+
+     `page-break-*` is the pre-2017 spelling. Chrome drives the export here and
+     understands `break-*`, but the aliases cost nothing and cover older engines
+     that ignore the modern property outright. */
+  .resume-sheet .resume-entry,
+  .resume-sheet li {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Keep a heading with whatever follows it. */
+  .resume-sheet .resume-heading,
+  .resume-sheet h1,
+  .resume-sheet h2,
+  .resume-sheet h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Two lines minimum either side of a break in flowing text (summary etc.). */
+  .resume-sheet p {
+    orphans: 2;
+    widows: 2;
   }
   
   /* Ensure the preview container doesn't have borders/shadows in the PDF */
@@ -253,9 +425,11 @@ body {
     padding: 0 !important;
   }
   
-  /* Hide page margins injected by browsers where possible */
+  /* Hide page margins injected by browsers where possible.
+     `size` is deliberately not set here: the builder emits its own `@page size`
+     rule from the selected paper stock (see PAGE_SIZES). A hardcoded A4 here
+     would compete with that and silently win or lose depending on style order. */
   @page {
     margin: 0mm;
-    size: A4;
   }
 }

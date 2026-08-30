@@ -1,7 +1,12 @@
 import type { CSSProperties } from 'react';
-import { TemplateProps, fullName, range, bullets, degreeLine, has } from './shared';
+import {
+  TemplateProps, fullName, range, bullets, degreeLine, has, cleanUrl,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel,
+} from './shared';
 
 // Template 11 — GOVERNMENT / FEDERAL: USAJobs-style, serif, ruled name block, structured fields.
+// Deliberately monochrome — federal/formal applications expect black-and-white,
+// so this template ignores the accent picker rather than tinting away that formality.
 const serif = '"Times New Roman", Times, serif';
 
 export default function GovernmentTemplate({ data }: TemplateProps) {
@@ -16,7 +21,7 @@ export default function GovernmentTemplate({ data }: TemplateProps) {
     ['Email', contact.email || ''],
     ['Phone', contact.phone || ''],
     ['Address', [contact.city, contact.country].filter(Boolean).join(', ')],
-    ['LinkedIn', contact.linkedin || ''],
+    ['LinkedIn', cleanUrl(contact.linkedin)],
   ].filter(([, v]) => v) as [string, string][];
 
   return (
@@ -41,23 +46,23 @@ export default function GovernmentTemplate({ data }: TemplateProps) {
 
       {data.summary && (
         <>
-          <div style={sectionTitle}>Professional Summary</div>
+          <div className="resume-heading" style={sectionTitle}>Professional Summary</div>
           <p style={{ margin: 0, textAlign: 'justify' }}>{data.summary}</p>
         </>
       )}
 
       {has(data.skills) && (
         <>
-          <div style={sectionTitle}>Skills</div>
+          <div className="resume-heading" style={sectionTitle}>Skills</div>
           <p style={{ margin: 0 }}>{data.skills.map((s) => s.name).join('; ')}</p>
         </>
       )}
 
       {has(data.experience) && (
         <>
-          <div style={sectionTitle}>Work Experience</div>
+          <div className="resume-heading" style={sectionTitle}>Work Experience</div>
           {data.experience.map((e) => (
-            <div key={e.id} style={{ marginBottom: 12 }}>
+            <div key={e.id} className="resume-entry" style={{ marginBottom: 12 }}>
               <div style={{ fontWeight: 700 }}>{e.position}</div>
               <div>{[e.company, e.location].filter(Boolean).join(', ')}</div>
               <div style={{ fontSize: 11.5 }}>{range(e.startDate, e.endDate, e.currentlyWorking, true)}</div>
@@ -72,9 +77,9 @@ export default function GovernmentTemplate({ data }: TemplateProps) {
 
       {has(data.education) && (
         <>
-          <div style={sectionTitle}>Education</div>
+          <div className="resume-heading" style={sectionTitle}>Education</div>
           {data.education.map((e) => (
-            <div key={e.id} style={{ marginBottom: 7 }}>
+            <div key={e.id} className="resume-entry" style={{ marginBottom: 7 }}>
               <div style={{ fontWeight: 700 }}>{degreeLine(e)}</div>
               <div>{[e.institution, e.location].filter(Boolean).join(', ')}</div>
               <div style={{ fontSize: 11.5 }}>{range(e.startDate, e.endDate, e.currentlyStudying, true)}{e.score ? ` · GPA: ${e.score}` : ''}</div>
@@ -83,15 +88,87 @@ export default function GovernmentTemplate({ data }: TemplateProps) {
         </>
       )}
 
+      {has(data.certifications) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Certifications &amp; Licenses</div>
+          {data.certifications.map((c) => (
+            <div key={c.id} className="resume-entry" style={{ marginBottom: 6 }}>
+              <div style={{ fontWeight: 700 }}>{c.name}</div>
+              <div style={{ fontSize: 11.5 }}>{certMeta(c)}</div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {has(data.courses) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Training &amp; Courses</div>
+          {data.courses.map((c) => (
+            <div key={c.id} className="resume-entry" style={{ marginBottom: 6 }}>
+              <div style={{ fontWeight: 700 }}>{c.name}</div>
+              <div style={{ fontSize: 11.5 }}>{courseMeta(c)}</div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {has(data.languages) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Languages</div>
+          <p style={{ margin: 0 }}>{data.languages.map(languageLabel).join('; ')}</p>
+        </>
+      )}
+
       {has(data.projects) && (
         <>
-          <div style={sectionTitle}>Relevant Projects</div>
+          <div className="resume-heading" style={sectionTitle}>Relevant Projects</div>
           {data.projects.map((p) => (
-            <div key={p.id} style={{ marginBottom: 8 }}>
+            <div key={p.id} className="resume-entry" style={{ marginBottom: 8 }}>
               <div style={{ fontWeight: 700 }}>{p.name}{p.url ? ` (${p.url})` : ''}</div>
               <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
                 {bullets(p.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
               </ul>
+            </div>
+          ))}
+        </>
+      )}
+
+      {has(data.publications) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Publications</div>
+          {data.publications.map((p) => (
+            <div key={p.id} className="resume-entry" style={{ marginBottom: 6 }}>
+              <div style={{ fontWeight: 700 }}>{p.title}</div>
+              <div style={{ fontSize: 11.5 }}>{pubMeta(p)}</div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {has(data.volunteer) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Volunteer Experience</div>
+          {data.volunteer.map((v) => (
+            <div key={v.id} className="resume-entry" style={{ marginBottom: 9 }}>
+              <div style={{ fontWeight: 700 }}>{v.role}</div>
+              <div>{[v.organization, v.location].filter(Boolean).join(', ')}</div>
+              <div style={{ fontSize: 11.5 }}>{range(v.startDate, v.endDate, v.currentlyVolunteering, true)}</div>
+              <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+                {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
+              </ul>
+            </div>
+          ))}
+        </>
+      )}
+
+      {has(data.awards) && (
+        <>
+          <div className="resume-heading" style={sectionTitle}>Awards &amp; Honors</div>
+          {data.awards.map((a) => (
+            <div key={a.id} className="resume-entry" style={{ marginBottom: 7 }}>
+              <div style={{ fontWeight: 700 }}>{a.name}</div>
+              <div style={{ fontSize: 11.5 }}>{awardMeta(a)}</div>
+              {a.description && <p style={{ margin: '2px 0 0' }}>{a.description}</p>}
             </div>
           ))}
         </>

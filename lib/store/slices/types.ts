@@ -1,13 +1,14 @@
 import { StateCreator } from 'zustand';
-import { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeProject, ResumeCertification, ResumeLanguage, ResumePublication, ResumeCourse, ResumeAward, ResumeVolunteer, ResumeCustomItem, TemplateId } from '../../types';
+import { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeProject, ResumeCertification, ResumeLanguage, ResumePublication, ResumeCourse, ResumeAward, ResumeVolunteer, ResumeCustomItem, TemplateId, FontPair, PageSize, Spacing } from '../../types';
 
 export interface GlobalSlice {
   resumeId: string | null;
   templateId: TemplateId;
   builderDesign: {
     accentColor: string;
-    fontPair: 'modern' | 'arial' | 'helvetica' | 'verdana' | 'times' | 'calibri' | 'courier' | 'editorial' | 'classic';
-    spacing: 'compact' | 'balanced' | 'airy';
+    fontPair: FontPair;
+    spacing: Spacing;
+    pageSize: PageSize;
     zoom: number;
   };
   data: ResumeData;

@@ -20,6 +20,7 @@ const ResumePreview = memo(function ResumePreview({
   data,
   templateId,
   hiddenSections = [],
+  builderDesign,
 }: ResumePreviewProps) {
   return (
     <div
@@ -33,6 +34,10 @@ const ResumePreview = memo(function ResumePreview({
         data={data}
         templateId={templateId as TemplateId}
         hiddenSections={hiddenSections}
+        spacing={builderDesign?.spacing}
+        fontPair={builderDesign?.fontPair}
+        pageSize={builderDesign?.pageSize}
+        accentColor={builderDesign?.accentColor}
       />
     </div>
   );

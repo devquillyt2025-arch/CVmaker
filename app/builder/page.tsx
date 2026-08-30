@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -28,9 +28,10 @@ import ResumePreview from '@/components/builder/ResumePreview';
 import PreviewModal from '@/components/builder/PreviewModal';
 import ImportResumeModal from '@/components/builder/ImportResumeModal';
 import ScoreFooterBar from '@/components/builder/ScoreFooterBar';
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE, FONT_CSS_MAP } from '@/components/resume-templates/shared';
 import PortalPopover from '@/components/ui/PortalPopover';
 import { calculateScore, mapResumeDataToParsedResume, parseJD } from '@/lib/scoring';
-import type { TemplateId } from '@/lib/types';
+import type { FontPair, TemplateId } from '@/lib/types';
 import { TEMPLATE_META } from '@/lib/templates';
 
 const ACCENTS = [
@@ -51,22 +52,19 @@ const FONT_PAIRS = [
   { id: 'classic', label: 'Classic (Times)' },
   { id: 'arial', label: 'Arial' },
 ] as const;
-const FONT_CSS_MAP: Record<string, string> = {
-  modern: '"Inter", "Segoe UI", system-ui, -apple-system, sans-serif',
-  arial: 'Arial, Helvetica, sans-serif',
-  helvetica: 'Helvetica, Arial, sans-serif',
-  verdana: 'Verdana, Geneva, sans-serif',
-  times: '"Times New Roman", Times, serif',
-  calibri: 'Calibri, Roboto, sans-serif',
-  courier: '"Courier New", Courier, monospace',
-  editorial: '"Georgia", "Times New Roman", serif',
-  classic: '"Times New Roman", Georgia, serif',
-};
 const SPACING = [
   { id: 'compact', label: 'Compact' },
   { id: 'balanced', label: 'Balanced' },
   { id: 'airy', label: 'Airy' },
 ] as const;
+const PAGE_SIZE_OPTIONS = [
+  { id: 'a4', label: PAGE_SIZES.a4.label },
+  { id: 'letter', label: PAGE_SIZES.letter.label },
+] as const;
+
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 2;
+const ZOOM_DEFAULT = 0.9;
 
 function IconButton({
   children,
@@ -235,7 +233,7 @@ function ToolbarDivider() {
   return <div className="h-9 w-px flex-shrink-0 self-center bg-slate-100 dark:bg-gray-800" />;
 }
 
-function FontSelect<T extends string>({
+function FontSelect<T extends FontPair>({
   value,
   options,
   onChange,
@@ -358,7 +356,7 @@ export default function BuilderPage() {
   useEffect(() => {
     if (!_hasHydrated) return;
     const saved = localStorage.getItem('resumeBuilder_font');
-    setBuilderDesign({ fontPair: (saved || 'editorial') as 'modern' | 'arial' | 'helvetica' | 'verdana' | 'times' | 'calibri' | 'courier' | 'editorial' | 'classic' });
+    setBuilderDesign({ fontPair: (saved || 'editorial') as FontPair });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_hasHydrated]);
 
@@ -382,6 +380,28 @@ export default function BuilderPage() {
 
   const workerRef = useRef<Worker | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+
+  // Both are persisted, so tolerate state saved before these settings existed.
+  const pageSize = builderDesign?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const page = PAGE_SIZES[pageSize] ?? PAGE_SIZES[DEFAULT_PAGE_SIZE];
+
+  // The sheet is a fixed pixel width, so zoom is the only way to see it whole in
+  // a half-width panel. Clamp defensively: an older stored value (or a NaN from
+  // a previous build) must not stick the controls.
+  const setZoom = useCallback((next: number) => {
+    const safe = Number.isFinite(next) ? next : ZOOM_DEFAULT;
+    setBuilderDesign({ zoom: Number(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, safe)).toFixed(2)) });
+  }, [setBuilderDesign]);
+
+  const fitZoom = useCallback(() => {
+    const el = previewScrollRef.current;
+    if (!el) return setZoom(ZOOM_DEFAULT);
+    // Subtract the container's horizontal padding so the sheet isn't clipped.
+    const styles = window.getComputedStyle(el);
+    const inner = el.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    setZoom(inner / page.w);
+  }, [setZoom, page.w]);
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../../lib/workers/score.worker.ts', import.meta.url));
@@ -401,22 +421,31 @@ export default function BuilderPage() {
     }
   }, [debouncedData, jdText]);
 
-  const handleDownload = useReactToPrint({
-    content: () => printRef.current,
+  const printDocument = useReactToPrint({
+    contentRef: printRef,
     documentTitle: `${fullName.replace(/\s+/g, '_')}_FolioX`,
-    onBeforePrint: () => {
+    onBeforePrint: async () => {
       setDownloading(true);
       setDlError('');
-      return Promise.resolve();
     },
     onAfterPrint: () => {
       setDownloading(false);
     },
-    onPrintError: (e) => {
+    onPrintError: (location, error) => {
       setDownloading(false);
-      setDlError(e?.message || 'Print failed');
+      setDlError(error?.message || `Print failed during ${location}`);
     }
   });
+
+  // Never hand the click event to `printDocument` — react-to-print treats a
+  // callback argument as the content override and warns when it isn't one.
+  const handleDownload = useCallback(() => {
+    if (!printRef.current) {
+      setDlError('Preview is still rendering. Try again in a moment.');
+      return;
+    }
+    printDocument();
+  }, [printDocument]);
 
   if (!_hasHydrated) {
     return (
@@ -427,6 +456,7 @@ export default function BuilderPage() {
   }
 
   const accentColor = builderDesign?.accentColor || '#4F46E5';
+  const zoom = Number.isFinite(builderDesign?.zoom) ? builderDesign.zoom : ZOOM_DEFAULT;
 
   return (
     <div
@@ -440,9 +470,9 @@ export default function BuilderPage() {
       <header className="relative z-20 border-b border-slate-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#0a0a0f]/90 px-6 py-3.5 shadow-sm shadow-slate-200/40 dark:shadow-none backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 dark:text-gray-400 transition hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-950 dark:hover:text-gray-100"
-            title="Dashboard"
+            title="Home"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -550,32 +580,43 @@ export default function BuilderPage() {
                 <button
                   type="button"
                   title="Zoom out"
-                  onClick={() => setBuilderDesign({ zoom: Math.max(0.55, Number((builderDesign.zoom - 0.05).toFixed(2))) })}
+                  onClick={() => setZoom(zoom - 0.05)}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-l-[7px] text-slate-500 dark:text-gray-400 transition-colors hover:bg-slate-50 dark:hover:bg-gray-700 hover:text-slate-900 dark:hover:text-gray-100"
                 >
                   <Minus className="h-3 w-3" />
                 </button>
                 <span className="w-10 py-1 text-center text-[11px] font-semibold tabular-nums text-slate-600 dark:text-gray-300">
-                  {Math.round(builderDesign.zoom * 100)}%
+                  {Math.round(zoom * 100)}%
                 </span>
                 <button
                   type="button"
                   title="Zoom in"
-                  onClick={() => setBuilderDesign({ zoom: Math.min(1, Number((builderDesign.zoom + 0.05).toFixed(2))) })}
+                  onClick={() => setZoom(zoom + 0.05)}
                   className="inline-flex h-7 w-7 items-center justify-center text-slate-500 dark:text-gray-400 transition-colors hover:bg-slate-50 dark:hover:bg-gray-700 hover:text-slate-900 dark:hover:text-gray-100"
                 >
                   <Plus className="h-3 w-3" />
                 </button>
                 <button
                   type="button"
-                  title="Fit preview"
-                  onClick={() => setBuilderDesign({ zoom: 0.9 })}
+                  title="Fit preview to panel"
+                  onClick={fitZoom}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-r-[7px] text-slate-500 dark:text-gray-400 transition-colors hover:bg-slate-50 dark:hover:bg-gray-700 hover:text-slate-900 dark:hover:text-gray-100"
                 >
                   <Maximize2 className="h-3 w-3" />
                 </button>
               </div>
             </div>
+          </ToolbarGroup>
+
+          <ToolbarDivider />
+
+          {/* ─ Page size ────────────────────────────── */}
+          <ToolbarGroup label="Page size">
+            <Segmented
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              onChange={(next) => setBuilderDesign({ pageSize: next })}
+            />
           </ToolbarGroup>
 
         </div>
@@ -641,15 +682,19 @@ export default function BuilderPage() {
 
         {/* ── Right: Preview panel ────────────────────────────────────────────── */}
         <section className="flex min-h-0 flex-1 flex-col bg-[#E8E8E8] dark:bg-[#0a0a0f]">
-          <div className="hover-scrollbar min-h-0 flex-1 overflow-y-auto py-12 pl-8 pr-8">
+          <div ref={previewScrollRef} className="hover-scrollbar min-h-0 flex-1 overflow-auto py-12 pl-8 pr-8">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="flex min-h-full max-w-[794px] justify-start"
+              className="flex min-h-full justify-start"
             >
-              <div className="origin-top-left" style={{ transform: `scale(${builderDesign.zoom})` }}>
+              <div className="origin-top-left" style={{ transform: `scale(${zoom})` }}>
                 <div ref={printRef}>
+                  {/* Lives inside printRef so react-to-print clones it into the
+                      print document — that is what makes the exported PDF use
+                      the selected stock rather than the browser's default. */}
+                  <style>{`@page { size: ${page.print}; margin: 0; }`}</style>
                   <ResumePreview
                     data={debouncedData}
                     templateId={templateId}

@@ -8,6 +8,7 @@ export const DEFAULT_BUILDER_DESIGN = {
   accentColor: '#0D9488',
   fontPair: 'editorial' as const,
   spacing: 'balanced' as const,
+  pageSize: 'a4' as const,
   zoom: 0.9,
 };
 

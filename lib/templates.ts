@@ -21,7 +21,6 @@ export const TEMPLATE_META: TemplateMeta[] = [
   { id: 'swiss-grid',      label: 'Swiss Grid',      ats: false, blurb: 'Stacked giant name, 3-column grid, crimson accents. Editorial.' },
   { id: 'infographic',     label: 'Infographic',     ats: false, blurb: 'Avatar header with dot proficiency meters. Modern and data-visual.' },
   { id: 'minimalist-mono', label: 'Minimalist Mono', ats: true,  blurb: 'Monospace, terminal-inspired // section headers. Developer aesthetic.' },
-  { id: 'magazine-spread', label: 'Magazine Spread', ats: false, blurb: 'Huge display name, 3-column feature layout with a stats box. Premium.' },
   { id: 'card-stack',      label: 'Card Stack',      ats: false, blurb: 'Each role in its own rounded card. Warm amber accents.' },
   { id: 'timeline-left',   label: 'Timeline Left',   ats: false, blurb: 'Vertical timeline of your career with indigo markers. Narrative.' },
   { id: 'government',      label: 'Government / Federal', ats: true, blurb: 'USAJobs-style structured serif with full date formatting. Very formal.' },
@@ -29,4 +28,5 @@ export const TEMPLATE_META: TemplateMeta[] = [
   { id: 'elegant-serif',   label: 'Elegant Serif',   ats: true,  blurb: 'Italic serif name with ornamental dividers. Academic, legal, finance.' },
   { id: 'startup-bold',    label: 'Startup Bold',    ats: false, blurb: 'Oversized orange name, two-column body. YC-startup energy.' },
   { id: 'academic-cv',     label: 'Academic CV',     ats: true,  blurb: 'Long-form CV with publications and hanging indents. Research roles.' },
+  { id: 'signature-header', label: 'Signature Header', ats: true, blurb: 'Huge centered name, icon contact row, thin rule dividers, solid foot bar. Corporate clean.' },
 ];

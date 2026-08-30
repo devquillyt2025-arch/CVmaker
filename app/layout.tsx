@@ -8,8 +8,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'FolioX — Resumes that open doors.',
   description:
-    'AI-powered resume builder. Get an ATS score, Claude-rewritten resume, and DOCX ready to send — in seconds.',
-  keywords: ['ATS resume', 'resume builder', 'AI resume rewriter', 'ATS score checker'],
+    'A free resume builder that runs in your browser. Fifteen typeset templates, a live preview of the exact page you export, and AI help for the hard parts. No sign-up.',
+  keywords: ['ATS resume', 'resume builder', 'resume templates', 'PDF resume', 'CV maker'],
   icons: {
     icon: '/foliox-logo.png',
     apple: '/foliox-logo.png',

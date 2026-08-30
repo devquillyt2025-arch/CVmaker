@@ -1,7 +1,19 @@
 export type TemplateId =
   | 'classic' | 'sidebar-dark' | 'executive-bold' | 'creative-purple' | 'swiss-grid'
-  | 'infographic' | 'minimalist-mono' | 'magazine-spread' | 'card-stack' | 'timeline-left'
-  | 'government' | 'dark-mode' | 'elegant-serif' | 'startup-bold' | 'academic-cv';
+  | 'infographic' | 'minimalist-mono' | 'card-stack' | 'timeline-left'
+  | 'government' | 'dark-mode' | 'elegant-serif' | 'startup-bold' | 'academic-cv'
+  | 'signature-header';
+
+/** Resume density, as chosen by the builder's Spacing control. */
+export type Spacing = 'compact' | 'balanced' | 'airy';
+
+/** Paper stock, as chosen by the builder's Page size control. Keys PAGE_SIZES. */
+export type PageSize = 'a4' | 'letter';
+
+/** Typeface, as chosen by the builder's font picker. Keys FONT_CSS_MAP. */
+export type FontPair =
+  | 'modern' | 'arial' | 'helvetica' | 'verdana' | 'times'
+  | 'calibri' | 'courier' | 'editorial' | 'classic';
 
 export interface Contact {
   name: string;

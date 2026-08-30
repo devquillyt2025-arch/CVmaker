@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { ResumeData, TemplateId } from '@/lib/types';
 import type { StoreState } from '@/lib/store/slices/types';
 import ResumePreview from './ResumePreview';

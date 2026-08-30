@@ -101,7 +101,6 @@ const TEMPLATE_MAP: Record<TemplateId, typeof ClassicTemplate> = {
   'swiss-grid':      ModernTemplate,
   'infographic':     SidebarTemplate, // Closest structure for two-column graphics
   'minimalist-mono': MinimalTemplate,
-  'magazine-spread': ExecutiveTemplate, // Full width elegant structure
   'card-stack':      ModernTemplate, // Clean separated sections
   'timeline-left':   ContemporaryTemplate,
   'government':      ClassicTemplate, // Standard formal format
@@ -109,6 +108,7 @@ const TEMPLATE_MAP: Record<TemplateId, typeof ClassicTemplate> = {
   'elegant-serif':   ElegantTemplate,
   'startup-bold':    BoldTemplate,
   'academic-cv':     AcademicTemplate,
+  'signature-header': ClassicTemplate, // Closest structure: centered header, single column
 };
 
 export async function generateBuilderPdfBlob(
