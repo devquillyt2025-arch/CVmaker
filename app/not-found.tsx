@@ -9,8 +9,8 @@ export default function NotFound() {
         <Link href="/" className="rounded-full border border-slate-300 dark:border-gray-700 px-5 py-2 text-sm font-medium text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-800">
           Home
         </Link>
-        <Link href="/builder" className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
-          Open Builder
+        <Link href="/dashboard" className="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+          Your resumes
         </Link>
       </div>
     </div>

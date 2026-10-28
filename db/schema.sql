@@ -14,3 +14,7 @@ CREATE TABLE IF NOT EXISTS resumes (
 );
 
 CREATE INDEX IF NOT EXISTS resumes_owner_updated_idx ON resumes (owner_id, updated_at DESC);
+
+-- Optional name shown on the dashboard ("Backend — Stripe"). NULL means the
+-- dashboard derives one from the resume's name and job title.
+ALTER TABLE resumes ADD COLUMN IF NOT EXISTS title text;

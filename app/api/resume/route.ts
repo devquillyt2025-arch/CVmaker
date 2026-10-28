@@ -1,14 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db, hasDatabase, withConnectRetry } from '@/lib/db';
 import { getOwnerId, getOrCreateOwnerId, isUuid } from '@/lib/owner';
+import { notConfigured, cloudError, readBody, contentJson } from '@/lib/resumeApi';
 
 export const dynamic = 'force-dynamic';
-
-/** A resume is a few KB; anything far bigger is not a resume. */
-const MAX_BYTES = 512 * 1024;
-
-const notConfigured = () =>
-  NextResponse.json({ error: 'Cloud save is not configured' }, { status: 503 });
 
 /** GET — this browser's most recently saved resume, or `{ resume: null }`. */
 export async function GET() {
@@ -28,8 +23,7 @@ export async function GET() {
       resume: row ? { id: row.id, content: row.content, updatedAt: row.updated_at } : null,
     });
   } catch (err) {
-    console.error('resume load failed:', err);
-    return NextResponse.json({ error: 'Could not load from the cloud' }, { status: 502 });
+    return cloudError('Could not load from the cloud', err);
   }
 }
 
@@ -41,25 +35,12 @@ export async function GET() {
 export async function PUT(req: Request) {
   if (!hasDatabase()) return notConfigured();
 
-  const raw = await req.text();
-  if (raw.length > MAX_BYTES) {
-    return NextResponse.json({ error: 'Resume is too large to save' }, { status: 413 });
-  }
-
-  let body: { id?: unknown; content?: unknown };
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const content = body.content as { data?: unknown } | undefined;
-  if (!content || typeof content !== 'object' || !content.data || typeof content.data !== 'object') {
-    return NextResponse.json({ error: 'Missing resume content' }, { status: 400 });
-  }
+  const body = await readBody(req);
+  if (body instanceof NextResponse) return body;
+  const json = contentJson(body);
+  if (!json) return NextResponse.json({ error: 'Missing resume content' }, { status: 400 });
 
   const owner = getOrCreateOwnerId();
-  const json = JSON.stringify(content);
 
   try {
     if (isUuid(body.id)) {
@@ -77,7 +58,6 @@ export async function PUT(req: Request) {
       RETURNING id, updated_at`);
     return NextResponse.json({ id: inserted[0].id, updatedAt: inserted[0].updated_at });
   } catch (err) {
-    console.error('resume save failed:', err);
-    return NextResponse.json({ error: 'Could not save to the cloud' }, { status: 502 });
+    return cloudError('Could not save to the cloud', err);
   }
 }

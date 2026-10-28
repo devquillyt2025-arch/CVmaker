@@ -14,6 +14,12 @@
     },
     "app/api/resume/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/resumes/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/resumes/[id]/route.ts": {
+      "maxDuration": 60
     }
   }
 }

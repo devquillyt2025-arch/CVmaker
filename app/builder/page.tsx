@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -315,12 +316,32 @@ const SAVE_HINT: Record<SaveStatus, string> = {
   local: 'Cloud save is not configured, so your resume is stored in this browser only',
 };
 
+function FullScreenLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#080d1a]">
+      <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+    </div>
+  );
+}
+
 export default function BuilderPage() {
+  // useSearchParams needs a Suspense boundary for the static prerender.
+  return (
+    <Suspense fallback={<FullScreenLoader />}>
+      <Builder />
+    </Suspense>
+  );
+}
+
+function Builder() {
   const { data, templateId, sectionOrder, hiddenSections, builderDesign, _hasHydrated, setBuilderDesign, setTemplateId } = useResumeStore();
   const debouncedData = useDebounce(data, 300);
   const { jdText } = useUIStore();
   const stats = useResumeStats(debouncedData);
-  const { saveStatus } = useAutosaveSync();
+  // Read through the router, not window.location: on a client-side navigation
+  // from the dashboard the first render can still see the previous URL.
+  const requestedId = useSearchParams().get('id');
+  const { saveStatus, opening, openError } = useAutosaveSync(requestedId);
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -465,10 +486,16 @@ export default function BuilderPage() {
     printDocument();
   }, [printDocument]);
 
-  if (!_hasHydrated) {
+  if (!_hasHydrated || opening) return <FullScreenLoader />;
+
+  if (openError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#080d1a]">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-[#080d1a] px-6 text-center">
+        <CloudOff className="h-8 w-8 text-amber-500" />
+        <p className="max-w-sm text-sm text-slate-600 dark:text-gray-300">{openError}</p>
+        <Link href="/dashboard" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+          Back to your resumes
+        </Link>
       </div>
     );
   }
@@ -488,9 +515,9 @@ export default function BuilderPage() {
       <header className="relative z-20 border-b border-slate-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#0a0a0f]/90 px-6 py-3.5 shadow-sm shadow-slate-200/40 dark:shadow-none backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-4">
           <Link
-            href="/"
+            href="/dashboard"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 dark:text-gray-400 transition hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-950 dark:hover:text-gray-100"
-            title="Home"
+            title="Your resumes"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>

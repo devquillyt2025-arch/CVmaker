@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import RotatingTagline from '@/components/landing/RotatingTagline';
 import NavCta from '@/components/landing/NavCta';
+import FXMark from '@/components/landing/FXMark';
 
 /**
  * Landing page.
@@ -21,24 +22,6 @@ import NavCta from '@/components/landing/NavCta';
  */
 
 const ATS_FEATURES = ['ATS-friendly layouts', 'Selectable text', 'Embedded fonts', 'Real A4 geometry'];
-
-function FXMark({ size = 32 }: { size?: number }) {
-  return (
-    <svg width={size} height={Math.round(size * 0.78)} viewBox="0 0 36 28" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="fxg" x1="0" y1="0" x2="36" y2="28" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#6C63FF" />
-          <stop offset="1" stopColor="#8B5CF6" />
-        </linearGradient>
-      </defs>
-      <line x1="3" y1="3" x2="3" y2="25" stroke="url(#fxg)" strokeWidth="2.8" strokeLinecap="round" />
-      <line x1="3" y1="3" x2="14" y2="3" stroke="url(#fxg)" strokeWidth="2.8" strokeLinecap="round" />
-      <line x1="3" y1="14" x2="11" y2="14" stroke="url(#fxg)" strokeWidth="2.8" strokeLinecap="round" />
-      <line x1="19" y1="3" x2="33" y2="25" stroke="url(#fxg)" strokeWidth="2.8" strokeLinecap="round" />
-      <line x1="33" y1="3" x2="19" y2="25" stroke="url(#fxg)" strokeWidth="2.8" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function Home() {
   return (
@@ -85,10 +68,10 @@ export default function Home() {
           <ThemeToggle />
 
           <NavCta
-            href="/builder"
+            href="/dashboard"
             className="lp-cta-sm inline-flex items-center gap-1.5 rounded-full px-5 py-[7px] text-[13px] font-bold text-white no-underline"
           >
-            Open Builder
+            My resumes
           </NavCta>
         </div>
       </nav>
@@ -124,7 +107,7 @@ export default function Home() {
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <NavCta
-              href="/builder"
+              href="/dashboard"
               className="lp-cta-lg inline-flex items-center gap-2 rounded-full px-10 py-4 text-base font-bold text-white no-underline"
             >
               Start building →
