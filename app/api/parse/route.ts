@@ -2,6 +2,7 @@ import { checkAndConsumeCredit } from '@/lib/credits';
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { ParsedResume } from '@/lib/types';
+import { AI_MODEL, AI_DECLINED, responseText } from '@/lib/ai';
 
 export const maxDuration = 60;
 
@@ -123,13 +124,16 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      model: AI_MODEL,
+      max_tokens: 8000, // room for thinking as well as the JSON
+      output_config: { effort: 'low' },
       messages: [{ role: 'user', content: claudeContent }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
-    const resumeData = extractJson(text);
+    if (response.stop_reason === 'refusal') {
+      return NextResponse.json({ error: AI_DECLINED }, { status: 422 });
+    }
+    const resumeData = extractJson(responseText(response));
 
     return NextResponse.json(resumeData);
   } catch (err) {

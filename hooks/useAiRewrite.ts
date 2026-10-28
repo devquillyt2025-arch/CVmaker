@@ -93,12 +93,13 @@ export function useAiRewrite() {
             if (!line.startsWith('data: ')) continue;
             const payload = line.slice(6).trim();
             if (payload === '[DONE]') break outer;
-            try {
-              // Each token is JSON-encoded to safely transport newlines/quotes
-              const token = JSON.parse(payload) as string;
-              accumulated += token;
-              onUpdateRef.current(accumulated);
-            } catch { /* skip malformed chunk */ }
+            let token: unknown;
+            // Each token is JSON-encoded to safely transport newlines/quotes
+            try { token = JSON.parse(payload); } catch { continue; /* skip malformed chunk */ }
+            // A non-string payload is the server saying the request was declined.
+            if (typeof token !== 'string') throw new Error((token as { error?: string })?.error || 'Rewrite failed');
+            accumulated += token;
+            onUpdateRef.current(accumulated);
           }
         }
       } finally {

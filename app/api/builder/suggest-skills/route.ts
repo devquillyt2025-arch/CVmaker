@@ -1,6 +1,7 @@
 import { checkAndConsumeCredit } from '@/lib/credits';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { AI_MODEL, AI_DECLINED, responseText } from '@/lib/ai';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -34,13 +35,16 @@ Mix hard technical skills and important soft skills that ATS systems typically s
 Output exactly a comma-separated list of 10 skills. No numbers, no bullet points, no introductory text. For example: React.js, TypeScript, Project Management, Agile, Communication, Node.js, GraphQL, SEO, Data Analysis, Leadership`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 150,
+      model: AI_MODEL,
+      max_tokens: 1024, // room for thinking as well as the short list
+      output_config: { effort: 'low' },
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.6,
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+    if (response.stop_reason === 'refusal') {
+      return NextResponse.json({ error: AI_DECLINED }, { status: 422 });
+    }
+    const text = responseText(response).trim();
     const skills = text.split(',').map(s => s.trim()).filter(Boolean);
 
     return NextResponse.json({ skills });

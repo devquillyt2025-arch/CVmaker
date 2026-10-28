@@ -1,6 +1,7 @@
 import { checkAndConsumeCredit } from '@/lib/credits';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import { AI_MODEL, AI_DECLINED } from '@/lib/ai';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
 
@@ -95,8 +96,9 @@ export async function POST(req: Request) {
 
   // Use .stream() for clean async-iterable access
   const msgStream = anthropic.messages.stream({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 700,
+    model: AI_MODEL,
+    max_tokens: 2048, // room for thinking as well as the rewrite
+    output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
@@ -114,6 +116,9 @@ export async function POST(req: Request) {
             // JSON-encode each token so newlines and special chars are safe in SSE
             const line = `data: ${JSON.stringify(event.delta.text)}\n\n`;
             controller.enqueue(encoder.encode(line));
+          } else if (event.type === 'message_delta' && event.delta.stop_reason === 'refusal') {
+            // An object (not a string token) tells the client the request was declined.
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: AI_DECLINED })}\n\n`));
           }
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));

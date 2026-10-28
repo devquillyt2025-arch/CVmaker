@@ -143,11 +143,12 @@ export function useAiEnhancer(
               if (!line.startsWith('data: ')) continue;
               const jsonPayload = line.slice(6).trim();
               if (jsonPayload === '[DONE]') break outer;
-              try {
-                const token = JSON.parse(jsonPayload) as string;
-                accumulated += token;
-                onUpdateRef.current(accumulated);
-              } catch { /* skip malformed chunk */ }
+              let token: unknown;
+              try { token = JSON.parse(jsonPayload); } catch { continue; /* skip malformed chunk */ }
+              // A non-string payload is the server saying the request was declined.
+              if (typeof token !== 'string') throw new Error((token as { error?: string })?.error || 'Enhancement failed');
+              accumulated += token;
+              onUpdateRef.current(accumulated);
             }
           }
         } finally {

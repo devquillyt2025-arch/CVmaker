@@ -1,6 +1,7 @@
 import { checkAndConsumeCredit } from '@/lib/credits';
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { AI_MODEL, AI_DECLINED, responseText } from '@/lib/ai';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
 
@@ -34,12 +35,16 @@ Example: ["data pipeline", "ETL", "stakeholder management", "cross-functional"]
 Return ONLY the JSON array. No explanation.`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      model: AI_MODEL,
+      max_tokens: 1024, // room for thinking as well as the short list
+      output_config: { effort: 'low' },
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '[]';
+    if (response.stop_reason === 'refusal') {
+      return NextResponse.json({ error: AI_DECLINED }, { status: 422 });
+    }
+    const text = responseText(response).trim() || '[]';
     const match = text.match(/\[[\s\S]*\]/);
     const keywords = match ? JSON.parse(match[0]) : [];
 

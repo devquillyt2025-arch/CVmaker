@@ -9,6 +9,7 @@ import {
 import FitPreview from '@/components/builder/FitPreview';
 import FXMark from '@/components/landing/FXMark';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useDialog } from '@/components/ui/DialogProvider';
 import { useResumeStore } from '@/lib/store/useResumeStore';
 import { TEMPLATE_META } from '@/lib/templates';
 import {
@@ -145,6 +146,7 @@ function IconAction({ label, onClick, disabled, danger, children }: {
 
 export default function Dashboard() {
   const router = useRouter();
+  const dialog = useDialog();
   const hydrated = useResumeStore((s) => s._hasHydrated);
   const [mode, setMode] = useState<Mode>('loading');
   const [cloud, setCloud] = useState<CloudResume[]>([]);
@@ -199,7 +201,12 @@ export default function Dashboard() {
     setError('');
     if (mode !== 'cloud') {
       // Without the cloud the browser holds a single resume, so a new one replaces it.
-      if (hasWorkingCopy && !window.confirm('Without cloud save this browser keeps one resume. Replace it with a new one?')) return;
+      if (hasWorkingCopy && !(await dialog.confirm({
+        title: 'Replace your resume?',
+        message: 'Without cloud save this browser keeps a single resume, so starting a new one replaces it.',
+        confirmLabel: 'Replace',
+        danger: true,
+      }))) return;
       const store = useResumeStore.getState();
       store.loadCloudContent(content);
       store.setResumeId(null);
@@ -258,7 +265,12 @@ export default function Dashboard() {
   };
 
   const remove = async (r: CloudResume) => {
-    if (!window.confirm(`Delete “${resumeTitle(r)}”? This can't be undone.`)) return;
+    if (!(await dialog.confirm({
+      title: `Delete “${resumeTitle(r)}”?`,
+      message: 'This resume will be permanently deleted. This can’t be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    }))) return;
     setBusyId(r.id);
     setError('');
     try {
