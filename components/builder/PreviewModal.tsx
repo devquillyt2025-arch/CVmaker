@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { ResumeData, TemplateId } from '@/lib/types';
 import type { StoreState } from '@/lib/store/slices/types';
-import ResumePreview from './ResumePreview';
+import FitPreview from './FitPreview';
 
 interface Props {
   data: ResumeData;
@@ -61,16 +61,14 @@ export default function PreviewModal({ data, templateId, sectionOrder, hiddenSec
         </div>
 
         {/* HTML Preview */}
-        <div className="flex-1 bg-gray-200 relative overflow-y-auto overflow-x-hidden flex justify-center py-8">
-          <div className="origin-top" style={{ transform: 'scale(0.95)' }}>
-            <ResumePreview
-              data={data}
-              templateId={templateId}
-              sectionOrder={sectionOrder}
-              hiddenSections={hiddenSections}
-              builderDesign={builderDesign}
-            />
-          </div>
+        <div className="flex-1 bg-gray-200 overflow-y-auto overflow-x-hidden p-4 sm:p-8">
+          <FitPreview
+            data={data}
+            templateId={templateId}
+            sectionOrder={sectionOrder}
+            hiddenSections={hiddenSections}
+            builderDesign={builderDesign}
+          />
         </div>
       </div>
     </div>

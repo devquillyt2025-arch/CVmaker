@@ -111,14 +111,16 @@ function SectionCard({
         onClick={onToggle}
       >
         {dragHandleProps && (
-          <button
+          // A <div>, not a <button>: the DnD library won't start a keyboard drag
+          // from a native interactive element. dragHandleProps supplies role/tabIndex.
+          <div
             {...dragHandleProps}
             title="Drag to reorder"
-            className="shrink-0 rounded-md p-0.5 text-slate-300 dark:text-gray-600 opacity-0 transition-all group-hover:opacity-100 hover:text-slate-500 dark:hover:text-gray-400"
+            className="shrink-0 rounded-md p-0.5 text-slate-300 dark:text-gray-600 opacity-0 transition-all group-hover:opacity-100 focus-visible:opacity-100 hover:text-slate-500 dark:hover:text-gray-400"
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </div>
         )}
         <span className="shrink-0 rounded-lg bg-[#ede9fe] dark:bg-indigo-900/30 p-1.5 text-indigo-600 dark:text-indigo-400 transition-colors">
           <Icon className="w-3.5 h-3.5" />
@@ -297,8 +299,6 @@ export default function EditorPanel() {
         icon={User}
         isOpen={openSections.has('personal')}
         onToggle={() => toggleSection('personal')}
-        isVisible={!hiddenSections.includes('personal')}
-        onToggleVisibility={() => toggleSectionVisibility('personal')}
       >
         <PersonalInfo headless />
       </SectionCard>

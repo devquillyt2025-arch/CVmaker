@@ -189,6 +189,10 @@ export default function CertificationsStep({ headless = false }: { headless?: bo
       <button
         onClick={() => {
           addCertification();
+          setTimeout(() => {
+            const list = useResumeStore.getState().data.certifications || [];
+            if (list.length > 0) setExpandedId(list[list.length - 1].id);
+          }, 0);
         }}
         className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-violet-700 border border-dashed border-violet-300 rounded-[10px] bg-transparent hover:bg-violet-50 transition-colors mt-2"
       >

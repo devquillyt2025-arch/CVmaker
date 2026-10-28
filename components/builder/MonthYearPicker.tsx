@@ -23,7 +23,9 @@ function parseValue(value: string): { month: number | null; year: number | null 
 function formatDisplay(value: string): string {
   const { month, year } = parseValue(value);
   if (month && year) return `${MONTHS[month - 1]} ${year}`;
-  return '';
+  // Show free-text values (e.g. a bare "2019" from an imported resume) as-is
+  // rather than looking empty.
+  return value || '';
 }
 
 export default function MonthYearPicker({ value, onChange, disabled, placeholder = 'Select date' }: MonthYearPickerProps) {

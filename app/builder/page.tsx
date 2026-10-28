@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
+  CloudOff,
   ChevronDown,
   Download,
   Eye,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useResumeStore } from '@/lib/store/useResumeStore';
 import { useUIStore } from '@/lib/store/useUIStore';
-import { useAutosaveSync } from '@/hooks/useAutosaveSync';
+import { useAutosaveSync, type SaveStatus } from '@/hooks/useAutosaveSync';
 import { useResumeStats } from '@/hooks/useResumeStats';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useReactToPrint } from 'react-to-print';
@@ -298,22 +299,28 @@ function FontSelect<T extends FontPair>({
   );
 }
 
+const SAVE_LABEL: Record<SaveStatus, string> = {
+  idle: 'Saved',
+  saving: 'Saving',
+  saved: 'Saved',
+  error: 'Offline · retrying',
+  local: 'Saved on this device',
+};
+
+const SAVE_HINT: Record<SaveStatus, string> = {
+  idle: 'Your resume is saved to the cloud',
+  saving: 'Saving to the cloud…',
+  saved: 'Your resume is saved to the cloud',
+  error: "Couldn't reach the cloud. Your changes are kept on this device and will sync automatically.",
+  local: 'Cloud save is not configured, so your resume is stored in this browser only',
+};
+
 export default function BuilderPage() {
-  const { data, resumeId, setResumeId, templateId, sectionOrder, hiddenSections, builderDesign, _hasHydrated, setBuilderDesign, setTemplateId } = useResumeStore();
+  const { data, templateId, sectionOrder, hiddenSections, builderDesign, _hasHydrated, setBuilderDesign, setTemplateId } = useResumeStore();
   const debouncedData = useDebounce(data, 300);
   const { jdText } = useUIStore();
   const stats = useResumeStats(debouncedData);
-  const { saveStatus } = useAutosaveSync(resumeId, data, setResumeId);
-
-  // Initial hydration check for existing users
-  useEffect(() => {
-    if (_hasHydrated && !resumeId && data.contact.firstName) {
-      // Data exists locally but no resumeId (migrating from local-only)
-      // The useAutosaveSync will pick this up automatically if we pass a change, 
-      // but to force it, we can just rely on useAutosaveSync handling the initial INSERT
-      // as long as we trigger a save or useAutosaveSync detects `!resumeId` and inserts.
-    }
-  }, [_hasHydrated, resumeId, data.contact.firstName]);
+  const { saveStatus } = useAutosaveSync();
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -402,6 +409,17 @@ export default function BuilderPage() {
     const inner = el.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
     setZoom(inner / page.w);
   }, [setZoom, page.w]);
+
+  // A stored zoom is only right for the panel width it was set at — refit on
+  // load, on window resize and while the divider is dragged, otherwise the
+  // sheet's right side gets clipped.
+  useEffect(() => {
+    const el = previewScrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => fitZoom());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fitZoom, _hasHydrated]);
 
   useEffect(() => {
     workerRef.current = new Worker(new URL('../../lib/workers/score.worker.ts', import.meta.url));
@@ -494,10 +512,14 @@ export default function BuilderPage() {
               Import
             </button>
 
-            <div className="hidden items-center gap-1 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e293b] px-3 py-2 text-xs font-medium text-slate-500 dark:text-gray-400 shadow-sm sm:flex">
+            <div
+              className="hidden items-center gap-1 rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#1e293b] px-3 py-2 text-xs font-medium text-slate-500 dark:text-gray-400 shadow-sm sm:flex"
+              title={SAVE_HINT[saveStatus]}
+            >
               {saveStatus === 'saving' && <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />}
-              {saveStatus === 'saved' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
-              {saveStatus === 'error' ? 'Save error' : saveStatus === 'saving' ? 'Saving' : 'Saved'}
+              {(saveStatus === 'saved' || saveStatus === 'idle') && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+              {saveStatus === 'error' && <CloudOff className="h-3.5 w-3.5 text-amber-500" />}
+              {SAVE_LABEL[saveStatus]}
             </div>
 
             <IconButton label="Preview" onClick={() => setShowModal(true)}>
@@ -627,7 +649,7 @@ export default function BuilderPage() {
 
         {/* ── Left: Editor panel ──────────────────────────────────────────────── */}
         <section
-          className="builder-editor hover-scrollbar flex-none overflow-y-auto bg-[#F7F8FA] dark:bg-[#0f172a]"
+          className="builder-editor hover-scrollbar flex-none overflow-y-auto bg-[#F7F8FA] dark:bg-[#0f172a] max-md:!w-full"
           style={{ width: leftWidth ?? '50%', minWidth: 0 }}
         >
           <div
@@ -652,7 +674,7 @@ export default function BuilderPage() {
           role="separator"
           aria-label="Drag to resize panels"
           onMouseDown={handleSplitMouseDown}
-          className="group relative z-10 flex-none cursor-col-resize select-none"
+          className="group relative z-10 flex-none cursor-col-resize select-none max-md:hidden"
           style={{ width: 10 }}
         >
           {/* Visible line */}
@@ -681,7 +703,8 @@ export default function BuilderPage() {
         </div>
 
         {/* ── Right: Preview panel ────────────────────────────────────────────── */}
-        <section className="flex min-h-0 flex-1 flex-col bg-[#E8E8E8] dark:bg-[#0a0a0f]">
+        {/* Phones get the editor full width; the header Preview button shows the page. */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#E8E8E8] dark:bg-[#0a0a0f] max-md:hidden">
           <div ref={previewScrollRef} className="hover-scrollbar min-h-0 flex-1 overflow-auto py-12 pl-8 pr-8">
             <motion.div
               initial={{ opacity: 0, y: 12 }}

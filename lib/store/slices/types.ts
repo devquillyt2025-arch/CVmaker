@@ -1,6 +1,15 @@
 import { StateCreator } from 'zustand';
 import { ResumeData, ResumeExperience, ResumeEducation, ResumeSkill, ResumeProject, ResumeCertification, ResumeLanguage, ResumePublication, ResumeCourse, ResumeAward, ResumeVolunteer, ResumeCustomItem, TemplateId, FontPair, PageSize, Spacing } from '../../types';
 
+/** Everything the builder saves to the cloud (zoom is a per-device view setting, so it's left out). */
+export interface CloudContent {
+  data: ResumeData;
+  templateId: TemplateId;
+  sectionOrder: string[];
+  hiddenSections: string[];
+  builderDesign: Omit<GlobalSlice['builderDesign'], 'zoom'>;
+}
+
 export interface GlobalSlice {
   resumeId: string | null;
   templateId: TemplateId;
@@ -22,6 +31,8 @@ export interface GlobalSlice {
   setSectionOrder: (order: string[]) => void;
   toggleSectionVisibility: (id: string) => void;
   loadResumeData: (data: ResumeData) => void;
+  /** Replaces the whole builder state with a resume restored from the cloud. */
+  loadCloudContent: (content: CloudContent) => void;
   reset: () => void;
 }
 

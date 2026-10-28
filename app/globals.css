@@ -358,9 +358,15 @@ body {
    its own root element, so the Spacing control cannot work through inheritance
    — these rules have to win against those inline styles, hence `!important`.
    `> *` is the template root (the sheet's only child); line-height then cascades
-   to the rest of the document, since inner nodes rarely set their own. */
+   to the rest of the document, since inner nodes rarely set their own.
+   Padding skips `[data-bleed]` roots (full-bleed sidebars/headers): their
+   padding lives on inner columns, and padding the root would inset the color
+   blocks away from the page edge. */
 .resume-sheet[data-spacing='compact'] > * {
   line-height: 1.3 !important;
+}
+
+.resume-sheet[data-spacing='compact'] > :not([data-bleed]) {
   padding: 30px 40px !important;
 }
 
@@ -370,6 +376,9 @@ body {
 
 .resume-sheet[data-spacing='airy'] > * {
   line-height: 1.75 !important;
+}
+
+.resume-sheet[data-spacing='airy'] > :not([data-bleed]) {
   padding: 56px 64px !important;
 }
 
@@ -381,7 +390,19 @@ body {
   font-family: var(--resume-font) !important;
 }
 
+/* Print-only full-page colour strip; see `.resume-print-bg` under @media print. */
+.resume-print-bg {
+  display: none;
+}
+
 @media print {
+  /* The app's dark theme sets a near-black body; without this, everything past
+     the end of the resume on its last page prints black. */
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -396,10 +417,50 @@ body {
      `page-break-*` is the pre-2017 spelling. Chrome drives the export here and
      understands `break-*`, but the aliases cost nothing and cover older engines
      that ignore the modern property outright. */
-  .resume-sheet .resume-entry,
+  /* A short entry stays in one piece. A long one (3+ bullets) may break between
+     bullets: keeping a whole job together pushed it — heading and all — onto the
+     next page and left a gap the height of the job at the foot of the previous one. */
+  .resume-sheet .resume-entry:not(:has(li:nth-of-type(3))),
   .resume-sheet li {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+
+  /* …but an entry's title / company / date lines always travel with its first bullet. */
+  .resume-sheet .resume-entry > :not(ul):not(ol) {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Repeat each box's padding at every page break. Templates put their page
+     margins in padding on the root or columns, and without this that padding
+     exists only at the very top of page 1 and the very bottom of the last page,
+     so page 2 started flush against the paper edge. */
+  .resume-sheet,
+  .resume-sheet * {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Full-height colour strips (sidebars) and foot bars repeat on every printed
+     page: Chrome prints `position: fixed` boxes once per page. Without this a
+     sidebar's colour stopped where its text did on the last page, and a foot
+     bar sat directly under the last line instead of at the foot of the page.
+     They sit at z-index -1, so the sheet's own white must not cover them. */
+  .resume-sheet {
+    background: transparent !important;
+  }
+
+  .resume-print-bg {
+    display: block;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+  }
+
+  .resume-foot-bar {
+    position: fixed !important;
   }
 
   /* Keep a heading with whatever follows it. */

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useResumeStore } from '@/lib/store/useResumeStore';
 import { Plus, Trash2, GripVertical, Sparkles, Loader2 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function SkillsStep({ headless = false }: { headless?: boolean }) {
@@ -44,14 +43,6 @@ export default function SkillsStep({ headless = false }: { headless?: boolean })
   }, [skills.length]);
 
 
-
-  const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: skills.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 72,
-    overscan: 5,
-  });
 
   // Index-based helpers — work correctly even when skill.id is missing,
   // which is the root cause of the "skill name not editable" regression.
@@ -116,23 +107,16 @@ export default function SkillsStep({ headless = false }: { headless?: boolean })
         </button>
       </div>
 
-      <div ref={parentRef} className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+      <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="skills-list" mode="virtual">
+          <Droppable droppableId="skills-list">
             {(provided) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                style={{
-                  height: `${virtualizer.getTotalSize()}px`,
-                  width: '100%',
-                  position: 'relative',
-                }}
+                className="space-y-3"
               >
-                {virtualizer.getVirtualItems().map((virtualItem) => {
-                  const index = virtualItem.index;
-                  const skill = skills[index];
-                  if (!skill) return null;
+                {skills.map((skill, index) => {
                   const draggableId = skill.id || `skill-${index}`;
                   
                   return (
@@ -143,18 +127,10 @@ export default function SkillsStep({ headless = false }: { headless?: boolean })
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            style={{
-                              ...style,
-                              position: 'absolute',
-                              top: virtualItem.start,
-                              left: 0,
-                              width: '100%',
-                              height: virtualItem.size,
-                              paddingBottom: '12px', // spacing between items
-                            }}
+                            style={style}
                           >
                             <div
-                              className={`flex items-center gap-3 bg-white p-3 rounded-xl border group transition-shadow h-full ${
+                              className={`flex items-center gap-3 bg-white p-3 rounded-xl border group transition-shadow ${
                                 snapshot.isDragging
                                   ? 'shadow-lg border-indigo-300'
                                   : 'border-gray-200'

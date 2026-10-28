@@ -1,7 +1,28 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ParsedResume, ResumeData, LanguageProficiency } from '@/lib/types';
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * The parser returns dates like "Jun 2021" or "06/2021", but the builder's
+ * month picker stores "2021-06". Anything else (a bare year, "Present") is
+ * kept as written.
+ */
+function toMonthValue(d?: string): string {
+  const s = (d || '').trim();
+  const named = /^([a-z]{3})[a-z]*\.?\s+(\d{4})$/i.exec(s);
+  if (named) {
+    const i = MONTHS.indexOf(named[1].toLowerCase());
+    if (i >= 0) return `${named[2]}-${String(i + 1).padStart(2, '0')}`;
+  }
+  const numeric = /^(\d{1,2})[/.-](\d{4})$/.exec(s);
+  if (numeric && +numeric[1] >= 1 && +numeric[1] <= 12) return `${numeric[2]}-${numeric[1].padStart(2, '0')}`;
+  return s;
+}
+
 export function parsedToBuilderData(parsed: ParsedResume): ResumeData {
+  // The model occasionally omits keys entirely; never let that crash the import.
+  parsed = { ...parsed, contact: parsed.contact ?? ({} as ParsedResume['contact']), experience: parsed.experience ?? [] };
   const parts = (parsed.contact.name || '').trim().split(/\s+/);
   const firstName = parts[0] || '';
   const lastName = parts.slice(1).join(' ');
@@ -29,8 +50,8 @@ export function parsedToBuilderData(parsed: ParsedResume): ResumeData {
       company: exp.company || '',
       position: exp.title || '',
       location: '',
-      startDate: exp.startDate || '',
-      endDate: (exp.endDate || '').toLowerCase().includes('present') ? '' : (exp.endDate || ''),
+      startDate: toMonthValue(exp.startDate),
+      endDate: (exp.endDate || '').toLowerCase().includes('present') ? '' : toMonthValue(exp.endDate),
       currentlyWorking: (exp.endDate || '').toLowerCase().includes('present'),
       description: (exp.bullets || []).join('\n'),
     })),
@@ -55,8 +76,8 @@ export function parsedToBuilderData(parsed: ParsedResume): ResumeData {
       name: proj.name || '',
       description: proj.description || '',
       url: proj.url || '',
-      startDate: proj.startDate || '',
-      endDate: proj.endDate || '',
+      startDate: toMonthValue(proj.startDate),
+      endDate: toMonthValue(proj.endDate),
     })),
     certifications: (parsed.certifications || []).map(cert => ({
       id: uuidv4(),

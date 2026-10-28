@@ -1,3 +1,4 @@
+import { TEMPLATE_META } from '@/lib/templates';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { StoreState } from './slices/types';
@@ -48,6 +49,10 @@ export const useResumeStore = create<StoreState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.setHasHydrated(true);
+        // Fall back if the persisted template was removed from the gallery
+        if (!TEMPLATE_META.some((t) => t.id === state.templateId)) {
+          state.setTemplateId('signature-header');
+        }
         if (!state.builderDesign) {
           state.setBuilderDesign({});
         } else if (state.builderDesign.zoom === 0.82) {

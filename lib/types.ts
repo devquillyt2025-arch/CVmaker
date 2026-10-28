@@ -1,8 +1,6 @@
 export type TemplateId =
-  | 'classic' | 'sidebar-dark' | 'executive-bold' | 'creative-purple' | 'swiss-grid'
-  | 'infographic' | 'minimalist-mono' | 'card-stack' | 'timeline-left'
-  | 'government' | 'dark-mode' | 'elegant-serif' | 'startup-bold' | 'academic-cv'
-  | 'signature-header';
+  | 'startup-bold' | 'signature-header' | 'academic-cv' | 'elegant-serif'
+  | 'creative-purple' | 'executive-bold' | 'sidebar-dark';
 
 /** Resume density, as chosen by the builder's Spacing control. */
 export type Spacing = 'compact' | 'balanced' | 'airy';

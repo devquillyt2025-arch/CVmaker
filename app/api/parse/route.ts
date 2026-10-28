@@ -76,8 +76,14 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey });
 
+  let content: string, filename: string;
   try {
-    const { content, filename } = await req.json() as { content: string; filename: string };
+    ({ content, filename } = await req.json() as { content: string; filename: string });
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
 
     if (!content || !filename) {
       return NextResponse.json({ error: 'Missing content or filename' }, { status: 400 });

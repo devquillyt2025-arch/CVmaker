@@ -1,7 +1,7 @@
 {
   "name": "FolioX",
   "short_name": "FolioX",
-  "description": "AI-powered resume builder. ATS score, rewrite, and DOCX — in seconds.",
+  "description": "Free resume builder that runs in your browser. Seven templates, live preview, AI writing help.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080d1a",

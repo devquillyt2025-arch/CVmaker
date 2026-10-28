@@ -377,7 +377,13 @@ export default function ExperienceStep({ headless = false }: { headless?: boolea
         <p className="text-[13px] text-gray-400 italic text-center py-4">No entries yet.</p>
       )}
       <button
-        onClick={() => addExperience()}
+        onClick={() => {
+          addExperience();
+          setTimeout(() => {
+            const list = useResumeStore.getState().data.experience || [];
+            if (list.length > 0) setExpandedId(list[list.length - 1].id);
+          }, 0);
+        }}
         className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold text-violet-700 border border-dashed border-violet-300 rounded-[10px] bg-transparent hover:bg-violet-50 transition-colors"
       >
         <Plus className="w-4 h-4" />

@@ -2,63 +2,57 @@ import type { CSSProperties, FC } from 'react';
 import type { FontPair, PageSize, ResumeData, Spacing, TemplateId } from '@/lib/types';
 import { PAGE_SIZES, DEFAULT_PAGE_SIZE, FONT_CSS_MAP, type TemplateProps } from './shared';
 
-import ClassicTemplate from './ClassicTemplate';
 import SidebarDarkTemplate from './SidebarDarkTemplate';
 import ExecutiveBoldTemplate from './ExecutiveBoldTemplate';
 import CreativePurpleTemplate from './CreativePurpleTemplate';
-import SwissGridTemplate from './SwissGridTemplate';
-import InfographicTemplate from './InfographicTemplate';
-import MinimalistMonoTemplate from './MinimalistMonoTemplate';
-import CardStackTemplate from './CardStackTemplate';
-import TimelineLeftTemplate from './TimelineLeftTemplate';
-import GovernmentTemplate from './GovernmentTemplate';
-import DarkModeTemplate from './DarkModeTemplate';
 import ElegantSerifTemplate from './ElegantSerifTemplate';
 import StartupBoldTemplate from './StartupBoldTemplate';
 import AcademicCvTemplate from './AcademicCvTemplate';
 import SignatureHeaderTemplate from './SignatureHeaderTemplate';
 
 export const HTML_TEMPLATES: Record<TemplateId, FC<TemplateProps>> = {
-  'classic': ClassicTemplate,
   'sidebar-dark': SidebarDarkTemplate,
   'executive-bold': ExecutiveBoldTemplate,
   'creative-purple': CreativePurpleTemplate,
-  'swiss-grid': SwissGridTemplate,
-  'infographic': InfographicTemplate,
-  'minimalist-mono': MinimalistMonoTemplate,
-  'card-stack': CardStackTemplate,
-  'timeline-left': TimelineLeftTemplate,
-  'government': GovernmentTemplate,
-  'dark-mode': DarkModeTemplate,
   'elegant-serif': ElegantSerifTemplate,
   'startup-bold': StartupBoldTemplate,
   'academic-cv': AcademicCvTemplate,
   'signature-header': SignatureHeaderTemplate,
 };
 
-/** Blank out sections the user has toggled off so templates simply skip them. */
-function applyHidden(data: ResumeData, hidden: string[]): ResumeData {
-  if (!hidden.length) return data;
+/** True when any of the given fields has non-whitespace text. */
+const filled = (...fields: (string | undefined)[]) => fields.some((f) => f?.trim());
+
+/**
+ * Prepares data for rendering: drops entries the user added but hasn't filled
+ * in yet (otherwise a lone "Certifications" heading prints over nothing) and
+ * blanks out sections toggled off, so templates simply skip them.
+ */
+function prepare(data: ResumeData, hidden: string[]): ResumeData {
   const h = (k: string) => hidden.includes(k);
   return {
     ...data,
     summary: h('summary') ? '' : data.summary,
-    skills: h('skills') ? [] : data.skills,
-    experience: h('experience') ? [] : data.experience,
-    education: h('education') ? [] : data.education,
-    projects: h('projects') ? [] : data.projects,
-    certifications: h('certifications') ? [] : data.certifications,
-    languages: h('languages') ? [] : data.languages,
-    publications: h('publications') ? [] : data.publications,
-    courses: h('courses') ? [] : data.courses,
-    awards: h('awards') ? [] : data.awards,
-    volunteer: h('volunteer') ? [] : data.volunteer,
+    skills: h('skills') ? [] : data.skills.filter((s) => filled(s.name)),
+    experience: h('experience') ? [] : data.experience.filter((e) => filled(e.position, e.company, e.description)),
+    education: h('education') ? [] : data.education.filter((e) => filled(e.institution, e.degree, e.field)),
+    projects: h('projects') ? [] : data.projects.filter((p) => filled(p.name, p.description)),
+    certifications: h('certifications') ? [] : (data.certifications ?? []).filter((c) => filled(c.name)),
+    languages: h('languages') ? [] : (data.languages ?? []).filter((l) => filled(l.name)),
+    publications: h('publications') ? [] : (data.publications ?? []).filter((p) => filled(p.title)),
+    courses: h('courses') ? [] : (data.courses ?? []).filter((c) => filled(c.name)),
+    awards: h('awards') ? [] : (data.awards ?? []).filter((a) => filled(a.name)),
+    volunteer: h('volunteer') ? [] : (data.volunteer ?? []).filter((v) => filled(v.role, v.organization)),
+    customSections: (data.customSections ?? [])
+      .filter((s) => !h(s.id))
+      .map((s) => ({ ...s, items: (s.items ?? []).filter((i) => filled(i.name, i.description)) })),
   };
 }
 
 interface ResumeDocProps {
   data: ResumeData;
   templateId: TemplateId;
+  sectionOrder?: string[];
   hiddenSections?: string[];
   spacing?: Spacing;
   fontPair?: FontPair;
@@ -78,14 +72,15 @@ interface ResumeDocProps {
 export default function ResumeDoc({
   data,
   templateId,
+  sectionOrder,
   hiddenSections = [],
   spacing = 'balanced',
   fontPair,
   pageSize = DEFAULT_PAGE_SIZE,
   accentColor,
 }: ResumeDocProps) {
-  const Template = HTML_TEMPLATES[templateId] ?? ClassicTemplate;
-  const filtered = applyHidden(data, hiddenSections);
+  const Template = HTML_TEMPLATES[templateId] ?? SignatureHeaderTemplate;
+  const filtered = prepare(data, hiddenSections);
   const page = PAGE_SIZES[pageSize] ?? PAGE_SIZES[DEFAULT_PAGE_SIZE];
 
   // `data-font` is omitted entirely when no font is chosen, so the `[data-font]`
@@ -103,7 +98,7 @@ export default function ResumeDoc({
 
   return (
     <div className="resume-sheet" data-spacing={spacing} data-font={fontPair} style={style}>
-      <Template data={filtered} accentColor={accentColor} />
+      <Template data={filtered} sectionOrder={sectionOrder} accentColor={accentColor} />
     </div>
   );
 }

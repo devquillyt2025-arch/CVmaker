@@ -7,6 +7,7 @@ import { useResumeStore } from '@/lib/store/useResumeStore';
 import { DEMO_RESUME_DATA } from '@/lib/store/slices/defaultData';
 import { DEFAULT_SECTION_ORDER } from '@/lib/store/slices/globalSlice';
 import ResumePreview from '@/components/builder/ResumePreview';
+import FitPreview from '@/components/builder/FitPreview';
 import { TEMPLATE_META } from '@/lib/templates';
 import type { TemplateId, ResumeData } from '@/lib/types';
 import type { StoreState } from '@/lib/store/slices/types';
@@ -220,15 +221,13 @@ export default function TemplateGallery() {
               </div>
             </div>
             <div className="flex-1 overflow-auto bg-slate-200 dark:bg-gray-950 p-6">
-              <div className="mx-auto w-fit">
-                <ResumePreview
-                  data={previewData}
-                  templateId={previewId}
-                  sectionOrder={order}
-                  hiddenSections={hiddenSections}
-                  builderDesign={builderDesign}
-                />
-              </div>
+              <FitPreview
+                data={previewData}
+                templateId={previewId}
+                sectionOrder={order}
+                hiddenSections={hiddenSections}
+                builderDesign={builderDesign}
+              />
             </div>
           </div>
         </div>

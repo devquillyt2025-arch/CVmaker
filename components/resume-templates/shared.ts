@@ -1,5 +1,6 @@
+import { Fragment, createElement, type ReactNode } from 'react';
 import type {
-  FontPair, PageSize, ResumeData,
+  FontPair, PageSize, ResumeData, ResumeCustomSection,
   ResumeCertification, ResumeCourse, ResumeAward, ResumePublication, ResumeLanguage,
 } from '@/lib/types';
 
@@ -20,6 +21,8 @@ export const FONT_CSS_MAP: Record<FontPair, string> = {
 
 export interface TemplateProps {
   data: ResumeData;
+  /** The builder's section order (section keys and `custom-…` ids). */
+  sectionOrder?: string[];
   /** User's chosen accent from the builder toolbar. Falls back to the template's own brand color when unset (e.g. gallery thumbnails). */
   accentColor?: string;
 }
@@ -115,6 +118,39 @@ export function degreeLine(edu: ResumeData['education'][number]): string {
 
 export function has<T>(arr?: T[]): arr is T[] {
   return Array.isArray(arr) && arr.length > 0;
+}
+
+/**
+ * Renders a column's section blocks in the user's builder order. `blocks` is
+ * keyed by section id in the template's own default order; falsy blocks (empty
+ * sections) are skipped, and ids the user's order doesn't mention keep their
+ * template position after the ordered ones. `gap` goes between rendered blocks,
+ * so spacing stays right whichever section ends up first or last.
+ */
+export function inOrder(order: string[] | undefined, blocks: Record<string, ReactNode>, gap?: ReactNode): ReactNode[] {
+  const keys = Object.keys(blocks).filter((k) => blocks[k]);
+  const rank = (k: string) => {
+    const i = order?.indexOf(k) ?? -1;
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  const sorted = keys
+    .map((k, i) => ({ k, i }))
+    .sort((a, b) => rank(a.k) - rank(b.k) || a.i - b.i)
+    .map(({ k }) => k);
+  return sorted.flatMap((k, i) => [
+    ...(i > 0 && gap ? [createElement(Fragment, { key: `${k}-gap` }, gap)] : []),
+    createElement(Fragment, { key: k }, blocks[k]),
+  ]);
+}
+
+/** One block per custom section, keyed by its id so `inOrder` can place it. */
+export function customSections(
+  data: ResumeData,
+  render: (section: ResumeCustomSection) => ReactNode,
+): Record<string, ReactNode> {
+  return Object.fromEntries(
+    (data.customSections ?? []).filter((s) => has(s.items)).map((s) => [s.id, render(s)]),
+  );
 }
 
 /**

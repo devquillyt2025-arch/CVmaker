@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import RotatingTagline from '@/components/landing/RotatingTagline';
+import NavCta from '@/components/landing/NavCta';
 
 /**
  * Landing page.
@@ -10,15 +11,16 @@ import RotatingTagline from '@/components/landing/RotatingTagline';
  * previous version sold the upload -> JD -> paid-rewrite -> DOCX funnel, and
  * every one of those pieces (auth, payments, the tailor entry point, server
  * persistence) was removed. Copy here claims only what /builder does today —
- * no pricing, no accounts, no server-side storage.
+ * no pricing, no accounts. Resumes autosave to the cloud (Neon), keyed to the browser.
  *
  * Styling reuses the --lp-* tokens already in globals.css, which carry proper
  * light and dark values, so this page themes itself with the rest of the app.
  * Hover and the brand gradient are `.lp-*` classes there too, which keeps this
- * a server component — only <RotatingTagline> and <ThemeToggle> ship JS.
+ * a server component — only <RotatingTagline>, <ThemeToggle> and the <NavCta>
+ * buttons ship JS.
  */
 
-const ATS_FEATURES = ['Single-column export', 'Selectable text', 'Embedded fonts', 'Real A4 geometry'];
+const ATS_FEATURES = ['ATS-friendly layouts', 'Selectable text', 'Embedded fonts', 'Real A4 geometry'];
 
 function FXMark({ size = 32 }: { size?: number }) {
   return (
@@ -73,21 +75,21 @@ export default function Home() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link
+          <NavCta
             href="/templates"
-            className="lp-navlink hidden sm:inline-flex rounded-full px-[18px] py-1.5 text-sm font-medium no-underline"
+            className="lp-navlink hidden sm:inline-flex items-center gap-1.5 rounded-full px-[18px] py-1.5 text-sm font-medium no-underline"
           >
             Templates
-          </Link>
+          </NavCta>
 
           <ThemeToggle />
 
-          <Link
+          <NavCta
             href="/builder"
-            className="lp-cta-sm rounded-full px-5 py-[7px] text-[13px] font-bold text-white no-underline"
+            className="lp-cta-sm inline-flex items-center gap-1.5 rounded-full px-5 py-[7px] text-[13px] font-bold text-white no-underline"
           >
             Open Builder
-          </Link>
+          </NavCta>
         </div>
       </nav>
 
@@ -116,28 +118,28 @@ export default function Home() {
           </div>
 
           <p style={{ fontSize: 18, color: 'var(--lp-body)', maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.65 }}>
-            A resume builder that runs in your browser. Fifteen typeset templates, a live
+            A resume builder that runs in your browser. Seven typeset templates, a live
             preview of the exact page you&rsquo;ll export, and AI that helps you write the hard parts.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
+            <NavCta
               href="/builder"
               className="lp-cta-lg inline-flex items-center gap-2 rounded-full px-10 py-4 text-base font-bold text-white no-underline"
             >
               Start building →
-            </Link>
+            </NavCta>
 
-            <Link
+            <NavCta
               href="/templates"
-              className="lp-btn-ghost inline-flex items-center rounded-full px-[30px] py-4 text-[15px] font-semibold no-underline"
+              className="lp-btn-ghost inline-flex items-center gap-2 rounded-full px-[30px] py-4 text-[15px] font-semibold no-underline"
             >
               Browse templates
-            </Link>
+            </NavCta>
           </div>
 
           <p style={{ fontSize: 13, color: 'var(--lp-valueprop)', letterSpacing: '0.02em', marginTop: 20 }}>
-            Your resume stays in your browser. Nothing to create, nothing to pay for.
+            Your resume saves automatically. No account to create, nothing to pay for.
           </p>
 
           <div style={{ marginTop: 32 }}>
@@ -171,8 +173,8 @@ export default function Home() {
           />
           <FeatureCard
             icon="🎨"
-            title="Fifteen templates, one click apart."
-            body="Classic, academic, government, editorial and more. Switch template, accent colour, typeface or density without retyping a word."
+            title="Seven templates, one click apart."
+            body="Academic, editorial, sidebar, bold and more. Switch template, accent colour, typeface or density without retyping a word."
             variant="paid"
           />
           <FeatureCard
@@ -189,7 +191,7 @@ export default function Home() {
         className="relative z-10 py-6 text-center text-xs"
         style={{ borderTop: '1px solid var(--lp-footer-border)', background: 'var(--lp-bg)', color: 'var(--lp-footer-text)' }}
       >
-        FolioX · Your resume is stored locally in this browser · No account required
+        FolioX · Autosaved to the cloud for this browser · No account required
       </footer>
     </div>
   );

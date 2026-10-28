@@ -106,4 +106,5 @@ export const DEMO_RESUME_DATA: ResumeData = {
   courses: [],
   awards: [],
   volunteer: [],
+  customSections: [],
 };

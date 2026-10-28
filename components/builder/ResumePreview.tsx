@@ -19,6 +19,7 @@ interface ResumePreviewProps {
 const ResumePreview = memo(function ResumePreview({
   data,
   templateId,
+  sectionOrder,
   hiddenSections = [],
   builderDesign,
 }: ResumePreviewProps) {
@@ -33,6 +34,7 @@ const ResumePreview = memo(function ResumePreview({
       <ResumeDoc
         data={data}
         templateId={templateId as TemplateId}
+        sectionOrder={sectionOrder}
         hiddenSections={hiddenSections}
         spacing={builderDesign?.spacing}
         fontPair={builderDesign?.fontPair}

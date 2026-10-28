@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = `You are an expert ATS Resume Writer. Rewrite the provided
 RULES:
 
 1. WORK EXPERIENCE BULLETS
-   Rewrite each bullet point to lead with a strong action verb, include at least one quantified metric (use realistic estimates if exact numbers unavailable), and demonstrate business impact. Output only the improved bullets, no commentary.
+   Rewrite each bullet point to lead with a strong action verb and demonstrate business impact. Output only the improved bullets, no commentary.
 
 2. KEYWORDS
    Extract the most impactful technical terms, tools, and domain skills from the Job Description (if provided) and embed them naturally. If no JD is provided, proactively match keywords from common JDs for the role. Prioritise exact keyword matches over synonyms.
@@ -20,21 +20,21 @@ RULES:
    ✓ Preferred: Led, Engineered, Scaled, Deployed, Architected, Delivered, Optimised, Automated, Designed, Reduced, Increased, Launched, Drove, Built, Migrated, Implemented, Spearheaded
    ✗ Banned: Helped, Worked, Assisted, Participated, Was responsible for, Handled, Utilised, Made sure, Supported, Contributed
 
-4. QUANTIFY
-   Turn every vague impact into a measurable result. You MUST add quantified metrics (%, $, time saved).
-   ✓ "Reduced API latency by 35% via connection pooling, cutting p99 from 420 ms to 270 ms"
-   ✗ "Improved API performance"
-   When no figures are available, use [N]%, [X]x, or [$Y] as fill-in placeholders.
+4. QUANTIFY — NEVER INVENT FACTS
+   Keep every number, date, duration and fact from the input. Never make up figures, years of experience, team sizes, project counts or achievements — this text goes on a real person's resume.
+   Where a result would be stronger with a metric the input doesn't give, insert a fill-in placeholder for the candidate to complete: [N]%, [X]x, [$Y], [N] years.
+   ✓ "Reduced API latency by [N]% via connection pooling"
+   ✗ "Reduced API latency by 35%" (when 35% was not in the input)
 
-4. CONCISENESS
+5. CONCISENESS
    Remove filler words and passive voice. No "Successfully", "Was able to", or empty adverbs.
    Each bullet = one tight, powerful sentence.
 
-5. FORMAT
+6. FORMAT
    Preserve the input format exactly — bullets stay bullets, paragraphs stay paragraphs.
    Use the same bullet character (-, •, *) and newline style as the input.
 
-6. LENGTH
+7. LENGTH
    Output must be within ±20% of the original character count.
 
 OUTPUT: Return ONLY the rewritten text. No preamble, no explanation, no surrounding quotes or markdown unless present in the original.`;
@@ -56,7 +56,7 @@ function buildUserMessage(
     const action = originalText.trim()
       ? `CURRENT PROFESSIONAL SUMMARY:\n${originalText}`
       : 'Generate a compelling professional summary for this candidate.';
-    return `TASK: You are a professional resume writer. Rewrite this professional summary in under 80 words. Lead with years of experience and domain. Include 2–3 quantified achievements. End with a value proposition. Use active voice. No buzzwords. Output only the rewritten summary.${jdSection}${contextSection}\n${action}`;
+    return `TASK: You are a professional resume writer. Rewrite this professional summary in under 80 words. Lead with the candidate's domain (and years of experience only if stated). Highlight their strongest achievements, using only facts and numbers present in the input or candidate context — use [N] placeholders rather than inventing any. End with a value proposition. Use active voice. No buzzwords. Output only the rewritten summary.${jdSection}${contextSection}\n${action}`;
   }
 
   return `TASK: Optimise Work Experience Bullets${jdSection}${contextSection}\nCURRENT BULLETS (rewrite these):\n${originalText}`;
@@ -73,12 +73,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
   }
 
-  const body = await req.json() as {
+  let body: {
     originalText?: string;
     jdText?: string;
     sectionType?: 'summary' | 'experience';
     context?: string;
   };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
   const { originalText = '', jdText = '', sectionType = 'experience', context } = body;
 

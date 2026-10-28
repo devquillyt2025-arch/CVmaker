@@ -1,15 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Lets a verification build (NEXT_DIST_DIR=.next-verify) run next to
+  // `npm run dev` without overwriting the dev server's `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse', 'mammoth', '@react-pdf/renderer'],
-  },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // canvas is a native Node.js module used by @react-pdf/renderer internally;
-      // it doesn't exist in the browser bundle so tell webpack to ignore it.
-      config.resolve.fallback = { ...config.resolve.fallback, canvas: false };
-    }
-    return config;
+    serverComponentsExternalPackages: ['mammoth'],
   },
 };
 

@@ -1,226 +1,276 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Phone, Mail, MapPin, Link2 } from 'lucide-react';
 import {
-  TemplateProps, fullName, range, bullets, degreeLine, has, cleanUrl,
+  TemplateProps, fullName, range, bullets, degreeLine, has, cleanUrl, inOrder, customSections,
   certMeta, courseMeta, awardMeta, pubMeta, languageLabel,
 } from './shared';
 
-// Template 16 — SIGNATURE HEADER: huge centered name, icon contact row, thin rule
-// dividers between sections, solid color bar anchoring the foot of the page.
+// Template 16 — SIGNATURE HEADER: centered name, icon contact row, accent section
+// headings over a hairline rule, and a solid color bar anchoring the foot of the page.
+//
+// Laid out for how a recruiter actually skims: role title on the left, dates
+// right-aligned on the same line, employer and location directly beneath, so the
+// left edge reads as a career ladder and the right edge as a timeline. Body type
+// sits at ~10pt so a typical resume fits a page without shrinking headings below it.
 const sans = '"Segoe UI", system-ui, -apple-system, sans-serif';
-const RULE = '#e2e2e2';
-const MUTED = '#6b7280';
+const INK = '#111827';
 const BODY = '#374151';
+const MUTED = '#6b7280';
+const RULE = '#e5e7eb';
+const BAR_H = 12;
 
 function ContactItem({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
       {icon}
       {text}
     </span>
   );
 }
 
-export default function SignatureHeaderTemplate({ data, accentColor }: TemplateProps) {
+/** Title on the left, dates pinned right on the same baseline; subtitle line beneath. */
+function EntryHead({ title, dates, sub }: { title?: string; dates?: string; sub?: ReactNode }) {
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16 }}>
+        <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{title}</span>
+        {dates && (
+          <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{dates}</span>
+        )}
+      </div>
+      {sub && <div style={{ fontSize: 13, color: BODY, marginTop: 1 }}>{sub}</div>}
+    </>
+  );
+}
+
+/** "Stripe · San Francisco, CA" with the organisation emphasised over the place. */
+function OrgLine({ org, place }: { org?: string; place?: string }) {
+  if (!org && !place) return null;
+  return (
+    <>
+      {org && <span style={{ fontWeight: 600 }}>{org}</span>}
+      {org && place && <span style={{ color: MUTED }}>{'  ·  '}</span>}
+      {place && <span style={{ color: MUTED }}>{place}</span>}
+    </>
+  );
+}
+
+function Bullets({ text }: { text?: string }) {
+  const items = bullets(text);
+  if (!items.length) return null;
+  return (
+    <ul style={{ margin: '5px 0 0', paddingLeft: 17, color: BODY }}>
+      {items.map((b, i) => <li key={i} style={{ marginBottom: 2, paddingLeft: 2 }}>{b}</li>)}
+    </ul>
+  );
+}
+
+/** Name in bold followed by muted detail, for one-line items (certs, courses…). */
+function NameMeta({ name, meta }: { name: string; meta?: string }) {
+  return (
+    <div>
+      <span style={{ fontWeight: 600, color: INK }}>{name}</span>
+      {meta && <span style={{ color: MUTED }}>{'  ·  '}{meta}</span>}
+    </div>
+  );
+}
+
+/** Inline list separated by middots — denser and easier to scan than a bullet grid. */
+function InlineList({ items }: { items: string[] }) {
+  return (
+    <p style={{ margin: 0, color: BODY }}>
+      {items.map((s, i) => (
+        <span key={i}>
+          {i > 0 && <span style={{ color: '#9ca3af' }}>{'  ·  '}</span>}
+          {s}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+export default function SignatureHeaderTemplate({ data, sectionOrder, accentColor }: TemplateProps) {
   const { contact } = data;
   const ACCENT = accentColor || '#3f3f46';
   const heading: CSSProperties = {
-    fontSize: 14.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#111',
-    margin: '0 0 12px',
+    fontSize: 12.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.6, color: ACCENT,
+    paddingBottom: 4, borderBottom: `1px solid ${RULE}`, margin: '0 0 10px',
   };
-  const divider = <div style={{ height: 1, background: RULE, margin: '20px 0' }} />;
+  // Space between entries goes above each one (not below), so the last entry
+  // doesn't add to the gap before the next section.
+  const entry = (i: number, space = 12): CSSProperties => ({ marginTop: i ? space : 0 });
+  const gap = <div style={{ height: 18 }} />;
 
-  // Icon size, row font size and gap are all kept tight (rather than the more
-  // generous sizing used elsewhere) specifically so a full set of contact
-  // fields — including a raw pasted profile URL — has the best chance of
-  // staying on one centered line instead of wrapping lopsided.
+  const iconProps = { size: 11, color: MUTED, strokeWidth: 2 } as const;
   const contactItems = [
-    contact.phone && <ContactItem key="phone" icon={<Phone size={12} color={BODY} />} text={contact.phone} />,
-    contact.email && <ContactItem key="email" icon={<Mail size={12} color={BODY} />} text={contact.email} />,
+    contact.phone && <ContactItem key="phone" icon={<Phone {...iconProps} />} text={contact.phone} />,
+    contact.email && <ContactItem key="email" icon={<Mail {...iconProps} />} text={contact.email} />,
     (contact.city || contact.country) && (
-      <ContactItem key="loc" icon={<MapPin size={12} color={BODY} />} text={[contact.city, contact.country].filter(Boolean).join(', ')} />
+      <ContactItem key="loc" icon={<MapPin {...iconProps} />} text={[contact.city, contact.country].filter(Boolean).join(', ')} />
     ),
-    contact.linkedin && <ContactItem key="li" icon={<Link2 size={12} color={BODY} />} text={cleanUrl(contact.linkedin)} />,
-    contact.github && <ContactItem key="gh" icon={<Link2 size={12} color={BODY} />} text={cleanUrl(contact.github)} />,
-    contact.website && <ContactItem key="web" icon={<Link2 size={12} color={BODY} />} text={cleanUrl(contact.website)} />,
+    contact.linkedin && <ContactItem key="li" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.linkedin)} />,
+    contact.github && <ContactItem key="gh" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.github)} />,
+    contact.website && <ContactItem key="web" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.website)} />,
   ].filter(Boolean);
 
+  // Padding lives on this root (not an inner wrapper) because the Spacing control
+  // overrides the root's padding; the foot bar is absolutely positioned so it
+  // stays full-bleed whatever padding that control applies.
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'var(--sheet-h)', fontFamily: sans, color: '#1f2937' }}>
-      <div style={{ flex: 1, padding: '52px 58px 8px' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: 34, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0, color: '#111' }}>
-            {fullName(contact)}
-          </h1>
-          {contact.jobTitle && (
-            <div style={{ fontSize: 18, color: MUTED, marginTop: 6 }}>{contact.jobTitle}</div>
-          )}
-          {has(contactItems) && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px 20px', fontSize: 11.5, color: BODY, marginTop: 18 }}>
-              {contactItems}
-            </div>
-          )}
-        </div>
-        <div style={{ height: 1, background: RULE, margin: '22px 0 4px' }} />
-
-        {data.summary && (
-          <>
-            <div className="resume-heading" style={{ ...heading, marginTop: 20 }}>About Me</div>
-            <p style={{ margin: 0, color: BODY }}>{data.summary}</p>
-            {divider}
-          </>
+    <div style={{
+      position: 'relative', minHeight: 'var(--sheet-h)', padding: `44px 54px ${BAR_H + 40}px`,
+      fontFamily: sans, fontSize: 13.5, lineHeight: 1.5, color: BODY,
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{ fontSize: 30, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, lineHeight: 1.15, margin: 0, color: INK }}>
+          {fullName(contact)}
+        </h1>
+        {contact.jobTitle && (
+          <div style={{ fontSize: 15, fontWeight: 500, color: ACCENT, marginTop: 4, letterSpacing: 0.2 }}>{contact.jobTitle}</div>
         )}
-
-        {has(data.education) && (
-          <>
-            <div className="resume-heading" style={heading}>Education</div>
-            {data.education.map((e) => (
-              <div key={e.id} className="resume-entry" style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12.5, color: MUTED }}>{[e.institution, range(e.startDate, e.endDate, e.currentlyStudying)].filter(Boolean).join(' | ')}</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginTop: 2 }}>{degreeLine(e)}</div>
-                {(e.location || e.score) && (
-                  <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{[e.location, e.score && `GPA ${e.score}`].filter(Boolean).join(' · ')}</div>
-                )}
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.certifications) && (
-          <>
-            <div className="resume-heading" style={heading}>Certifications</div>
-            {data.certifications.map((c) => (
-              <div key={c.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.name}</div>
-                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{certMeta(c)}</div>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.experience) && (
-          <>
-            <div className="resume-heading" style={heading}>Work Experience</div>
-            {data.experience.map((e) => (
-              <div key={e.id} className="resume-entry" style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12.5, color: MUTED }}>{[e.company, range(e.startDate, e.endDate, e.currentlyWorking)].filter(Boolean).join(' | ')}</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginTop: 2 }}>{e.position}</div>
-                {e.location && <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{e.location}</div>}
-                <ul style={{ margin: '6px 0 0', paddingLeft: 18, color: BODY }}>
-                  {bullets(e.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
-                </ul>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.projects) && (
-          <>
-            <div className="resume-heading" style={heading}>Projects</div>
-            {data.projects.map((p) => (
-              <div key={p.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 700, fontSize: 14.5 }}>{p.name}</span>
-                  <span style={{ fontSize: 12, color: MUTED }}>{range(p.startDate, p.endDate)}</span>
-                </div>
-                {p.url && <div style={{ fontSize: 12.5, color: MUTED }}>{p.url}</div>}
-                <ul style={{ margin: '4px 0 0', paddingLeft: 18, color: BODY }}>
-                  {bullets(p.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
-                </ul>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.publications) && (
-          <>
-            <div className="resume-heading" style={heading}>Publications</div>
-            {data.publications.map((p) => (
-              <div key={p.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{p.title}</div>
-                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{pubMeta(p)}</div>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.courses) && (
-          <>
-            <div className="resume-heading" style={heading}>Courses &amp; Training</div>
-            {data.courses.map((c) => (
-              <div key={c.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{c.name}</div>
-                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{courseMeta(c)}</div>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.volunteer) && (
-          <>
-            <div className="resume-heading" style={heading}>Volunteer Experience</div>
-            {data.volunteer.map((v) => (
-              <div key={v.id} className="resume-entry" style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12.5, color: MUTED }}>{[v.organization, range(v.startDate, v.endDate, v.currentlyVolunteering)].filter(Boolean).join(' | ')}</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginTop: 2 }}>{v.role}</div>
-                <ul style={{ margin: '6px 0 0', paddingLeft: 18, color: BODY }}>
-                  {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
-                </ul>
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.awards) && (
-          <>
-            <div className="resume-heading" style={heading}>Awards &amp; Honors</div>
-            {data.awards.map((a) => (
-              <div key={a.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{a.name}</div>
-                <div style={{ fontSize: 12.5, color: MUTED, marginTop: 1 }}>{awardMeta(a)}</div>
-                {a.description && <p style={{ margin: '3px 0 0', color: BODY }}>{a.description}</p>}
-              </div>
-            ))}
-            {divider}
-          </>
-        )}
-
-        {has(data.languages) && (
-          <>
-            <div className="resume-heading" style={heading}>Languages</div>
-            <p style={{ margin: 0, color: BODY }}>{data.languages.map(languageLabel).join('  ·  ')}</p>
-            {divider}
-          </>
-        )}
-
-        {has(data.skills) && (
-          <>
-            <div className="resume-heading" style={heading}>Skills</div>
-            <ul style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 24, rowGap: 6,
-              margin: 0, padding: 0, listStyle: 'none', color: BODY,
-            }}>
-              {data.skills.map((s) => (
-                <li key={s.id} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#111', flexShrink: 0 }} />
-                  {s.name}
-                </li>
-              ))}
-            </ul>
-          </>
+        {has(contactItems) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px 18px', fontSize: 11.5, color: BODY, marginTop: 12 }}>
+            {contactItems}
+          </div>
         )}
       </div>
+      <div style={{ height: 2, background: ACCENT, margin: '18px 0 20px' }} />
 
-      {/* Signature bar anchoring the foot of the page. */}
-      <div style={{ height: 26, background: ACCENT, flexShrink: 0 }} />
+      {inOrder(sectionOrder, {
+        summary: data.summary && (
+          <>
+            <div className="resume-heading" style={heading}>Summary</div>
+            <p style={{ margin: 0, color: BODY }}>{data.summary}</p>
+          </>
+        ),
+        education: has(data.education) && (
+          <>
+            <div className="resume-heading" style={heading}>Education</div>
+            {data.education.map((e, i) => (
+              <div key={e.id} className="resume-entry" style={entry(i)}>
+                <EntryHead
+                  title={degreeLine(e) || e.institution}
+                  dates={range(e.startDate, e.endDate, e.currentlyStudying)}
+                  sub={<OrgLine org={degreeLine(e) ? e.institution : undefined} place={[e.location, e.score && `GPA ${e.score}`].filter(Boolean).join('  ·  ')} />}
+                />
+              </div>
+            ))}
+          </>
+        ),
+        certifications: has(data.certifications) && (
+          <>
+            <div className="resume-heading" style={heading}>Certifications</div>
+            {data.certifications.map((c, i) => (
+              <div key={c.id} className="resume-entry" style={entry(i, 4)}>
+                <NameMeta name={c.name} meta={certMeta(c)} />
+              </div>
+            ))}
+          </>
+        ),
+        experience: has(data.experience) && (
+          <>
+            <div className="resume-heading" style={heading}>Work Experience</div>
+            {data.experience.map((e, i) => (
+              <div key={e.id} className="resume-entry" style={entry(i)}>
+                <EntryHead
+                  title={e.position || e.company}
+                  dates={range(e.startDate, e.endDate, e.currentlyWorking)}
+                  sub={<OrgLine org={e.position ? e.company : undefined} place={e.location} />}
+                />
+                <Bullets text={e.description} />
+              </div>
+            ))}
+          </>
+        ),
+        projects: has(data.projects) && (
+          <>
+            <div className="resume-heading" style={heading}>Projects</div>
+            {data.projects.map((p, i) => (
+              <div key={p.id} className="resume-entry" style={entry(i)}>
+                <EntryHead
+                  title={p.name}
+                  dates={range(p.startDate, p.endDate)}
+                  sub={p.url ? <span style={{ color: MUTED, fontSize: 12 }}>{cleanUrl(p.url)}</span> : undefined}
+                />
+                <Bullets text={p.description} />
+              </div>
+            ))}
+          </>
+        ),
+        publications: has(data.publications) && (
+          <>
+            <div className="resume-heading" style={heading}>Publications</div>
+            {data.publications.map((p, i) => (
+              <div key={p.id} className="resume-entry" style={entry(i, 4)}>
+                <NameMeta name={p.title} meta={pubMeta(p)} />
+              </div>
+            ))}
+          </>
+        ),
+        courses: has(data.courses) && (
+          <>
+            <div className="resume-heading" style={heading}>Courses &amp; Training</div>
+            {data.courses.map((c, i) => (
+              <div key={c.id} className="resume-entry" style={entry(i, 4)}>
+                <NameMeta name={c.name} meta={courseMeta(c)} />
+              </div>
+            ))}
+          </>
+        ),
+        volunteer: has(data.volunteer) && (
+          <>
+            <div className="resume-heading" style={heading}>Volunteer Experience</div>
+            {data.volunteer.map((v, i) => (
+              <div key={v.id} className="resume-entry" style={entry(i)}>
+                <EntryHead
+                  title={v.role || v.organization}
+                  dates={range(v.startDate, v.endDate, v.currentlyVolunteering)}
+                  sub={<OrgLine org={v.role ? v.organization : undefined} />}
+                />
+                <Bullets text={v.description} />
+              </div>
+            ))}
+          </>
+        ),
+        awards: has(data.awards) && (
+          <>
+            <div className="resume-heading" style={heading}>Awards &amp; Honors</div>
+            {data.awards.map((a, i) => (
+              <div key={a.id} className="resume-entry" style={entry(i, 6)}>
+                <NameMeta name={a.name} meta={awardMeta(a)} />
+                {a.description && <p style={{ margin: '1px 0 0', color: BODY }}>{a.description}</p>}
+              </div>
+            ))}
+          </>
+        ),
+        languages: has(data.languages) && (
+          <>
+            <div className="resume-heading" style={heading}>Languages</div>
+            <InlineList items={data.languages.map(languageLabel)} />
+          </>
+        ),
+        skills: has(data.skills) && (
+          <>
+            <div className="resume-heading" style={heading}>Skills</div>
+            <InlineList items={data.skills.map((s) => s.name)} />
+          </>
+        ),
+        ...customSections(data, (sec) => (
+          <>
+            <div className="resume-heading" style={heading}>{sec.title}</div>
+            {sec.items.map((it, i) => (
+              <div key={it.id} className="resume-entry" style={entry(i, 6)}>
+                {it.name && <div style={{ fontWeight: 600, color: INK }}>{it.name}</div>}
+                {it.description && <p style={{ margin: '1px 0 0', color: BODY }}>{it.description}</p>}
+              </div>
+            ))}
+          </>
+        )),
+      }, gap)}
+
+      {/* Signature bar anchoring the foot of the page — of every page, in print. */}
+      <div className="resume-foot-bar" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: BAR_H, background: ACCENT }} />
     </div>
   );
 }
