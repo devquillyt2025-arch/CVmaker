@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
 import {
-  TemplateProps, fullName, contactItems, range, bullets, degreeLine, has, tint, cleanUrl,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections,
+  TemplateProps, fullName, contactEntries, range, bullets, degreeLine, has, tint, cleanUrl, toHref,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections, TRACKING,
 } from './shared';
+import { ContactRow, FitText, Link } from './parts';
 
 // Template 4 — CREATIVE PURPLE: full-bleed color header + light-tint/white two-column body.
 const sans = '"Segoe UI", system-ui, -apple-system, sans-serif';
@@ -14,8 +15,8 @@ const MUTED = '#6b7280';
 function TitleRow({ title, dates }: { title?: string; dates?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-      <span style={{ fontSize: 13.5, fontWeight: 700 }}>{title}</span>
-      {dates && <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap' }}>{dates}</span>}
+      <span style={{ fontSize: 13.5, fontWeight: 700, minWidth: 0 }}>{title}</span>
+      {dates && <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap', flexShrink: 0 }}>{dates}</span>}
     </div>
   );
 }
@@ -25,7 +26,7 @@ export default function CreativePurpleTemplate({ data, sectionOrder, accentColor
   const ACCENT = accentColor || '#7c3aed';
   const LIGHT = tint(ACCENT, 0.93);
   const colLabel: CSSProperties = {
-    fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: ACCENT, margin: '0 0 9px',
+    fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: TRACKING, color: ACCENT, margin: '0 0 9px',
   };
 
   return (
@@ -34,9 +35,13 @@ export default function CreativePurpleTemplate({ data, sectionOrder, accentColor
       <div className="resume-print-bg" aria-hidden style={{ left: 0, width: '38%', background: LIGHT }} />
       {/* Header */}
       <div style={{ background: ACCENT, color: '#fff', padding: '30px 40px' }}>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>{fullName(contact)}</h1>
+        <FitText as="h1" size={32} wrap style={{ fontWeight: 800, margin: 0 }}>{fullName(contact)}</FitText>
         {contact.jobTitle && <div style={{ fontSize: 14, color: tint(ACCENT, 0.85), marginTop: 3 }}>{contact.jobTitle}</div>}
-        <div style={{ fontSize: 11.5, color: tint(ACCENT, 0.9), marginTop: 10 }}>{contactItems(contact).join('   •   ')}</div>
+        <ContactRow
+          items={contactEntries(contact)}
+          sep={<span style={{ margin: '0 3px' }}>•</span>}
+          style={{ fontSize: 11.5, color: tint(ACCENT, 0.9), marginTop: 10 }}
+        />
       </div>
 
       {/* flex: 1 so the tinted left column runs to the foot of the page. */}
@@ -72,8 +77,8 @@ export default function CreativePurpleTemplate({ data, sectionOrder, accentColor
                 <div className="resume-heading" style={colLabel}>Education</div>
                 {data.education.map((e) => (
                   <div key={e.id} className="resume-entry" style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{degreeLine(e)}</div>
-                    <div style={{ fontSize: 11.5, color: '#374151' }}>{e.institution}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{degreeLine(e) || e.institution}</div>
+                    {degreeLine(e) && e.institution && <div style={{ fontSize: 11.5, color: '#374151' }}>{e.institution}</div>}
                     <div style={{ fontSize: 11, color: MUTED }}>{range(e.startDate, e.endDate, e.currentlyStudying)}</div>
                   </div>
                 ))}
@@ -126,7 +131,7 @@ export default function CreativePurpleTemplate({ data, sectionOrder, accentColor
                 {data.projects.map((p) => (
                   <div key={p.id} className="resume-entry" style={{ marginBottom: 11 }}>
                     <TitleRow title={p.name} dates={range(p.startDate, p.endDate)} />
-                    {p.url && <div style={{ fontSize: 11, color: ACCENT }}>{cleanUrl(p.url)}</div>}
+                    {p.url && <div style={{ fontSize: 11, color: ACCENT, overflowWrap: 'anywhere' }}><Link href={toHref(p.url)}>{cleanUrl(p.url)}</Link></div>}
                     <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#374151' }}>
                       {bullets(p.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                     </ul>

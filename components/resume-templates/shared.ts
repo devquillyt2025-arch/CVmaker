@@ -77,10 +77,26 @@ export function range(start?: string, end?: string, current?: boolean, full = fa
   return [f(start), e].filter(Boolean).join(' – ');
 }
 
+/**
+ * Upper bound for letter-spacing on resume text. Parsers rebuild words from
+ * glyph positions, and pdfminer — behind most Python ATS tooling — starts a new
+ * word wherever two letters sit more than 0.1em apart, so tracked-out headings
+ * came through as "S K I L L S" and the section was never detected. 0.05em also
+ * clears synthesized small caps, whose glyphs are drawn ~30% smaller.
+ */
+export const TRACKING = '0.05em';
+
+/**
+ * Typed glyph bullets are stripped whatever follows them; dashes only when
+ * followed by a space, so "-20% churn" keeps its minus sign. The template draws
+ * its own list marker, so a pasted "•" would otherwise print twice.
+ */
+const BULLET_PREFIX = /^(?:[•●▪■◦‣∙·*]\s*|[-–—]\s+)/;
+
 export function bullets(desc?: string): string[] {
   return (desc || '')
     .split('\n')
-    .map((s) => s.trim().replace(/^[-•]\s*/, ''))
+    .map((s) => s.trim().replace(BULLET_PREFIX, '').trim())
     .filter(Boolean);
 }
 
@@ -101,19 +117,57 @@ export function cleanUrl(url?: string): string {
   return (url || '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '');
 }
 
-export function contactItems(c: ResumeData['contact']): string[] {
-  return [
-    c.email,
-    c.phone,
-    [c.city, c.country].filter(Boolean).join(', '),
-    cleanUrl(c.linkedin),
-    cleanUrl(c.github),
-    cleanUrl(c.website),
-  ].filter(Boolean) as string[];
+/**
+ * Link target for a user-typed URL: "linkedin.com/in/x" -> "https://linkedin.com/in/x".
+ * Only web URLs are linked — anything with another scheme (`javascript:` and the
+ * like) gets no link at all rather than a live one in the preview.
+ */
+export function toHref(url?: string): string | undefined {
+  const u = (url || '').trim();
+  if (!u || /\s/.test(u)) return undefined;
+  if (/^https?:\/\//i.test(u)) return u;
+  return /^[a-z][a-z\d+.-]*:/i.test(u) ? undefined : `https://${u}`;
+}
+
+export type ContactKey = 'email' | 'phone' | 'location' | 'linkedin' | 'github' | 'website';
+
+export interface ContactEntry {
+  key: ContactKey;
+  text: string;
+  /** Becomes a link annotation in the exported PDF (mailto:, tel:, https:). */
+  href?: string;
+}
+
+const CONTACT_ORDER: ContactKey[] = ['email', 'phone', 'location', 'linkedin', 'github', 'website'];
+
+/** The filled-in contact details, in `order`, each with its link target. */
+export function contactEntries(c: ResumeData['contact'], order: ContactKey[] = CONTACT_ORDER): ContactEntry[] {
+  const email = c.email?.trim();
+  const phone = c.phone?.trim();
+  const all: Record<ContactKey, ContactEntry | null> = {
+    email: email ? { key: 'email', text: email, href: /^[^\s@]+@[^\s@]+$/.test(email) ? `mailto:${email}` : undefined } : null,
+    phone: phone ? { key: 'phone', text: phone, href: /\d/.test(phone) ? `tel:${phone.replace(/[^\d+]/g, '')}` : undefined } : null,
+    location: c.city || c.country ? { key: 'location', text: [c.city, c.country].filter(Boolean).join(', ') } : null,
+    linkedin: c.linkedin ? { key: 'linkedin', text: cleanUrl(c.linkedin), href: toHref(c.linkedin) } : null,
+    github: c.github ? { key: 'github', text: cleanUrl(c.github), href: toHref(c.github) } : null,
+    website: c.website ? { key: 'website', text: cleanUrl(c.website), href: toHref(c.website) } : null,
+  };
+  return order.map((k) => all[k]).filter((e): e is ContactEntry => Boolean(e));
 }
 
 export function degreeLine(edu: ResumeData['education'][number]): string {
   return [edu.degree, edu.field ? `in ${edu.field}` : ''].filter(Boolean).join(' ');
+}
+
+/**
+ * The education "Score / CGPA" field as printed. A bare number gets a "GPA"
+ * label; anything already labelled ("8.6 CGPA", "85%", "First Class") prints as
+ * typed, where blindly prefixing produced "GPA 8.6 CGPA" and "GPA 85%".
+ */
+export function scoreText(score?: string): string {
+  const s = (score || '').trim();
+  if (!s) return '';
+  return /[a-z%]/i.test(s) ? s : `GPA ${s}`;
 }
 
 export function has<T>(arr?: T[]): arr is T[] {

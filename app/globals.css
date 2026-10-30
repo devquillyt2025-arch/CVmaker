@@ -395,6 +395,29 @@ body {
   display: none;
 }
 
+/* Preview-only marker where a printed page ends (ResumePreview `pageBreaks`).
+   Content below the line prints on the next page. */
+.resume-page-break {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1.5px dashed rgba(99, 102, 241, 0.65);
+  pointer-events: none;
+}
+
+.resume-page-break > span {
+  position: absolute;
+  right: 8px;
+  top: -10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #6366f1;
+  color: #ffffff;
+  font: 600 10px/16px system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.02em;
+}
+
 @media print {
   /* The app's dark theme sets a near-black body; without this, everything past
      the end of the resume on its last page prints black. */
@@ -426,8 +449,11 @@ body {
     break-inside: avoid;
   }
 
-  /* …but an entry's title / company / date lines always travel with its first bullet. */
-  .resume-sheet .resume-entry > :not(ul):not(ol) {
+  /* …but an entry's title / company / date lines always travel with its first bullet.
+     Not the last child: a last child's break-after passes to the entry itself, which
+     glued every list-less entry (award, certification) to the next one, so whole
+     runs of them jumped pages together and left a gap the height of the run. */
+  .resume-sheet .resume-entry > :not(ul):not(ol):not(:last-child) {
     page-break-after: avoid;
     break-after: avoid;
   }
@@ -478,6 +504,10 @@ body {
     widows: 2;
   }
   
+  .resume-page-break {
+    display: none !important;
+  }
+
   /* Ensure the preview container doesn't have borders/shadows in the PDF */
   .print-preview-container {
     box-shadow: none !important;

@@ -68,6 +68,7 @@ export default function PreviewModal({ data, templateId, sectionOrder, hiddenSec
             sectionOrder={sectionOrder}
             hiddenSections={hiddenSections}
             builderDesign={builderDesign}
+            pageBreaks
           />
         </div>
       </div>

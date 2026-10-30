@@ -1,26 +1,30 @@
 import type { CSSProperties } from 'react';
 import {
-  TemplateProps, fullName, initials, range, bullets, degreeLine, has, tint, cleanUrl,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections,
+  TemplateProps, fullName, initials, range, bullets, degreeLine, has, tint, cleanUrl, toHref, contactEntries,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections, TRACKING,
 } from './shared';
+import { FitText, Link, Monogram } from './parts';
 
 // Template 2 — SIDEBAR DARK: 30% navy sidebar + 70% white content.
 const sans = '"Segoe UI", system-ui, -apple-system, Roboto, sans-serif';
 const NAVY = '#1e293b';
+const titleRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 };
+const dates: CSSProperties = { fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }: TemplateProps) {
   const { contact } = data;
+  const contacts = contactEntries(contact);
   const ACCENT = accentColor || '#2563eb';
   // Sidebar text sits on the dark navy panel, so it needs a lightened tone of
   // the accent to stay legible — the raw accent is reserved for the white main
   // column, where it already has enough contrast.
   const ACCENT_ON_DARK = tint(ACCENT, 0.55);
   const sideLabel: CSSProperties = {
-    color: ACCENT_ON_DARK, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2,
+    color: ACCENT_ON_DARK, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: TRACKING,
     margin: '18px 0 7px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: 4,
   };
   const mainLabel: CSSProperties = {
-    color: NAVY, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1,
+    color: NAVY, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: TRACKING,
     borderBottom: `2px solid ${ACCENT}`, paddingBottom: 3, margin: '18px 0 9px',
   };
 
@@ -30,19 +34,20 @@ export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }:
       <div className="resume-print-bg" aria-hidden style={{ left: 0, width: '32%', background: NAVY }} />
       {/* Sidebar */}
       <div style={{ width: '32%', background: NAVY, color: '#e2e8f0', padding: '34px 22px' }}>
-        <div style={{
-          width: 84, height: 84, borderRadius: '50%', background: ACCENT, color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800,
-          margin: '0 auto 14px',
-        }}>{initials(contact)}</div>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', margin: 0, lineHeight: 1.2 }}>
+        <Monogram text={initials(contact)} size={84} background={ACCENT} />
+        {/* Breaks only between words: a hyphenated surname split over two lines
+            reads as two names to a parser. Shrinks instead if one word is too wide. */}
+        <FitText as="h1" size={20} wrap style={{ fontWeight: 700, color: '#fff', textAlign: 'center', margin: 0, lineHeight: 1.2 }}>
           {fullName(contact)}
-        </h1>
+        </FitText>
         {contact.jobTitle && <div style={{ textAlign: 'center', color: ACCENT_ON_DARK, fontSize: 12, marginTop: 4 }}>{contact.jobTitle}</div>}
 
-        <div className="resume-heading" style={sideLabel}>Contact</div>
-        {[contact.email, contact.phone, [contact.city, contact.country].filter(Boolean).join(', '), cleanUrl(contact.linkedin), cleanUrl(contact.github), cleanUrl(contact.website)].filter(Boolean).map((c, i) => (
-          <div key={i} style={{ fontSize: 11, marginBottom: 5, wordBreak: 'break-word' }}>{c}</div>
+        {has(contacts) && <div className="resume-heading" style={sideLabel}>Contact</div>}
+        {/* Location may wrap; an email or URL shrinks to one line instead, since
+            a wrapped address can't be read back as one by a parser. */}
+        {contacts.map((c) => (c.key === 'location'
+          ? <div key={c.key} style={{ fontSize: 11, marginBottom: 5 }}>{c.text}</div>
+          : <FitText key={c.key} size={11} style={{ marginBottom: 5 }}><Link href={c.href}>{c.text}</Link></FitText>
         ))}
 
         {inOrder(sectionOrder, {
@@ -57,8 +62,8 @@ export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }:
               <div className="resume-heading" style={sideLabel}>Education</div>
               {data.education.map((e) => (
                 <div key={e.id} className="resume-entry" style={{ marginBottom: 9 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff' }}>{degreeLine(e)}</div>
-                  <div style={{ fontSize: 10.5 }}>{e.institution}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff' }}>{degreeLine(e) || e.institution}</div>
+                  {degreeLine(e) && e.institution && <div style={{ fontSize: 10.5 }}>{e.institution}</div>}
                   <div style={{ fontSize: 10.5, color: '#b6c2d1' }}>{range(e.startDate, e.endDate, e.currentlyStudying)}</div>
                 </div>
               ))}
@@ -98,11 +103,11 @@ export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }:
               <div className="resume-heading" style={mainLabel}>Experience</div>
               {data.experience.map((e) => (
                 <div key={e.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>{e.position}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
+                  <div style={titleRow}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{e.position || e.company}</span>
+                    <span style={dates}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>{[e.company, e.location].filter(Boolean).join(' · ')}</div>
+                  <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>{[e.position && e.company, e.location].filter(Boolean).join(' · ')}</div>
                   <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#334155' }}>
                     {bullets(e.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                   </ul>
@@ -115,11 +120,11 @@ export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }:
               <div className="resume-heading" style={mainLabel}>Projects</div>
               {data.projects.map((p) => (
                 <div key={p.id} className="resume-entry" style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={titleRow}>
                     <span style={{ fontSize: 12.5, fontWeight: 700 }}>{p.name}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>{range(p.startDate, p.endDate)}</span>
+                    <span style={dates}>{range(p.startDate, p.endDate)}</span>
                   </div>
-                  {p.url && <div style={{ fontSize: 11, color: ACCENT }}>{p.url}</div>}
+                  {p.url && <div style={{ fontSize: 11, color: ACCENT, overflowWrap: 'anywhere' }}><Link href={toHref(p.url)}>{cleanUrl(p.url)}</Link></div>}
                   <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#334155' }}>
                     {bullets(p.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                   </ul>
@@ -154,11 +159,11 @@ export default function SidebarDarkTemplate({ data, sectionOrder, accentColor }:
               <div className="resume-heading" style={mainLabel}>Volunteer Experience</div>
               {data.volunteer.map((v) => (
                 <div key={v.id} className="resume-entry" style={{ marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700 }}>{v.role}</span>
-                    <span style={{ fontSize: 11, color: '#64748b' }}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
+                  <div style={titleRow}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700 }}>{v.role || v.organization}</span>
+                    <span style={dates}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>{v.organization}</div>
+                  {v.role && v.organization && <div style={{ fontSize: 12, color: ACCENT, fontWeight: 600 }}>{v.organization}</div>}
                   <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#334155' }}>
                     {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                   </ul>

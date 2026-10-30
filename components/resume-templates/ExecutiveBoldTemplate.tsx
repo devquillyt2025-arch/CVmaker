@@ -1,12 +1,15 @@
 import type { CSSProperties } from 'react';
 import {
-  TemplateProps, fullName, contactItems, range, bullets, degreeLine, has,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections,
+  TemplateProps, fullName, contactEntries, range, bullets, degreeLine, has, cleanUrl, toHref, scoreText,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections, TRACKING,
 } from './shared';
+import { ContactRow, FitText, Link } from './parts';
 
 // Template 3 — EXECUTIVE BOLD: massive all-caps name, 35/65 two-column, timeline dots.
 const sans = '"Arial Black", "Helvetica Neue", Arial, sans-serif';
 const body = '"Helvetica Neue", Arial, sans-serif';
+const titleRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 };
+const dates: CSSProperties = { fontSize: 11, color: '#666', whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor }: TemplateProps) {
   const { contact } = data;
@@ -21,12 +24,12 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
     <div style={{ fontFamily: body, color: '#1a1a1a', padding: '40px 48px', fontSize: 12.5, lineHeight: 1.5 }}>
       {/* Name block */}
       <div style={{ borderBottom: `3px solid ${ACCENT}`, paddingBottom: 12, marginBottom: 16 }}>
-        <h1 style={{ fontFamily: sans, fontSize: 50, fontWeight: 900, letterSpacing: -2, textTransform: 'uppercase', margin: 0, lineHeight: 0.95 }}>
+        <FitText as="h1" size={50} wrap style={{ fontFamily: sans, fontWeight: 900, letterSpacing: -2, textTransform: 'uppercase', margin: 0, lineHeight: 0.95 }}>
           {fullName(contact)}
-        </h1>
+        </FitText>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8, flexWrap: 'wrap', gap: 6 }}>
-          {contact.jobTitle && <span style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: '#444' }}>{contact.jobTitle}</span>}
-          <span style={{ fontSize: 11, color: '#555' }}>{contactItems(contact).join('  ·  ')}</span>
+          {contact.jobTitle && <span style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: TRACKING, color: '#444' }}>{contact.jobTitle}</span>}
+          <ContactRow items={contactEntries(contact)} sep="·" style={{ fontSize: 11, color: '#555' }} />
         </div>
       </div>
 
@@ -38,7 +41,7 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
           {inOrder(sectionOrder, {
             skills: has(data.skills) && (
               <div>
-                <div className="resume-heading" style={leftLabel}>Expertise</div>
+                <div className="resume-heading" style={leftLabel}>Skills</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {data.skills.map((s) => (
                     <span key={s.id} style={{ fontSize: 11, border: '1.5px solid #111', borderRadius: 3, padding: '2px 7px' }}>{s.name}</span>
@@ -51,9 +54,9 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
                 <div className="resume-heading" style={leftLabel}>Education</div>
                 {data.education.map((e) => (
                   <div key={e.id} className="resume-entry" style={{ marginBottom: 9 }}>
-                    <div style={{ fontWeight: 700, fontSize: 12 }}>{degreeLine(e)}</div>
-                    <div style={{ fontSize: 11, color: '#555' }}>{e.institution}</div>
-                    <div style={{ fontSize: 10.5, color: '#666' }}>{range(e.startDate, e.endDate, e.currentlyStudying)}{e.score ? ` · GPA ${e.score}` : ''}</div>
+                    <div style={{ fontWeight: 700, fontSize: 12 }}>{degreeLine(e) || e.institution}</div>
+                    {degreeLine(e) && e.institution && <div style={{ fontSize: 11, color: '#555' }}>{e.institution}</div>}
+                    <div style={{ fontSize: 10.5, color: '#666' }}>{[range(e.startDate, e.endDate, e.currentlyStudying), scoreText(e.score)].filter(Boolean).join(' · ')}</div>
                   </div>
                 ))}
               </div>
@@ -83,7 +86,7 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
                 {data.projects.map((p) => (
                   <div key={p.id} className="resume-entry" style={{ marginBottom: 9 }}>
                     <div style={{ fontWeight: 700, fontSize: 12 }}>{p.name}</div>
-                    {p.url && <div style={{ fontSize: 10.5, color: '#666' }}>{p.url}</div>}
+                    {p.url && <div style={{ fontSize: 10.5, color: '#666', overflowWrap: 'anywhere' }}><Link href={toHref(p.url)}>{cleanUrl(p.url)}</Link></div>}
                     <ul style={{ margin: '3px 0 0', paddingLeft: 15 }}>
                       {bullets(p.description).map((b, i) => <li key={i} style={{ fontSize: 11, marginBottom: 2 }}>{b}</li>)}
                     </ul>
@@ -104,11 +107,11 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
                   {data.experience.map((e) => (
                     <div key={e.id} className="resume-entry" style={{ position: 'relative', marginBottom: 16 }}>
                       <span style={dot} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{e.position}</span>
-                        <span style={{ fontSize: 11, color: '#666' }}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
+                      <div style={titleRow}>
+                        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{e.position || e.company}</span>
+                        <span style={dates}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{[e.company, e.location].filter(Boolean).join(' — ')}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{[e.position && e.company, e.location].filter(Boolean).join(' — ')}</div>
                       <ul style={{ margin: '4px 0 0', paddingLeft: 16, color: '#333' }}>
                         {bullets(e.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                       </ul>
@@ -124,11 +127,11 @@ export default function ExecutiveBoldTemplate({ data, sectionOrder, accentColor 
                   {data.volunteer.map((v) => (
                     <div key={v.id} className="resume-entry" style={{ position: 'relative', marginBottom: 16 }}>
                       <span style={dot} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{v.role}</span>
-                        <span style={{ fontSize: 11, color: '#666' }}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
+                      <div style={titleRow}>
+                        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{v.role || v.organization}</span>
+                        <span style={dates}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{v.organization}</div>
+                      {v.role && v.organization && <div style={{ fontSize: 12, fontWeight: 700, color: '#444' }}>{v.organization}</div>}
                       <ul style={{ margin: '4px 0 0', paddingLeft: 16, color: '#333' }}>
                         {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                       </ul>

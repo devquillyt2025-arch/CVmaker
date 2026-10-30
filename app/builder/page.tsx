@@ -346,6 +346,9 @@ function Builder() {
   const [showImport, setShowImport] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [dlError, setDlError] = useState('');
+  // Measured from the rendered preview; null until it has laid out (or while
+  // it's hidden on phones), when the word-count estimate stands in.
+  const [pageCount, setPageCount] = useState<number | null>(null);
 
   // ── Resizable split ──────────────────────────────────────────────────────────
   const splitRef = useRef<HTMLDivElement>(null);
@@ -525,7 +528,7 @@ function Builder() {
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold leading-tight dark:text-gray-100">{fullName}</p>
             <p className="text-xs text-[#888] dark:text-gray-500">
-              {stats.wordCount} words · {stats.pageCount} page estimate · {completion}% complete
+              {stats.wordCount} words · {pageCount ?? `~${stats.pageCount}`} {(pageCount ?? stats.pageCount) === 1 ? 'page' : 'pages'} · {completion}% complete
             </p>
           </div>
 
@@ -751,6 +754,8 @@ function Builder() {
                     sectionOrder={sectionOrder}
                     hiddenSections={hiddenSections}
                     builderDesign={builderDesign}
+                    pageBreaks
+                    onPageCount={setPageCount}
                   />
                 </div>
               </div>

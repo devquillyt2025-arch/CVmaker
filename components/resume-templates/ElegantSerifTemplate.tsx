@@ -1,21 +1,22 @@
 import type React from 'react';
 import type { CSSProperties } from 'react';
 import {
-  TemplateProps, fullName, contactItems, range, bullets, degreeLine, has, tint, cleanUrl,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections,
+  TemplateProps, fullName, contactEntries, range, bullets, degreeLine, has, tint, cleanUrl, toHref, scoreText,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections, TRACKING,
 } from './shared';
+import { ContactRow, FitText, Link } from './parts';
 
 // Template 13 — ELEGANT SERIF: centered italic name, small-caps ornamental sections.
 const serif = 'Georgia, "Playfair Display", "Times New Roman", serif';
 // Italic is kept for short labels (role, dates, meta); long running text stays
 // roman, since paragraphs of italic serif are tiring to read.
-const DATE: CSSProperties = { fontSize: 11.5, fontStyle: 'italic', color: '#555', whiteSpace: 'nowrap' };
+const DATE: CSSProperties = { fontSize: 11.5, fontStyle: 'italic', color: '#555', whiteSpace: 'nowrap', flexShrink: 0 };
 
 /** Bold title with dates pinned right on the same line. */
 function TitleRow({ title, dates }: { title: React.ReactNode; dates?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-      <span style={{ fontWeight: 700 }}>{title}</span>
+      <span style={{ fontWeight: 700, minWidth: 0 }}>{title}</span>
       {dates && <span style={DATE}>{dates}</span>}
     </div>
   );
@@ -26,7 +27,7 @@ function Ornament({ title, accent }: { title: string; accent: string }) {
   return (
     <div className="resume-heading" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 11px' }}>
       <span style={line} />
-      <span style={{ fontVariant: 'small-caps', fontSize: 15, letterSpacing: 2, color: accent, fontWeight: 700 }}>{title}</span>
+      <span style={{ fontVariant: 'small-caps', fontSize: 15, letterSpacing: TRACKING, color: accent, fontWeight: 700 }}>{title}</span>
       <span style={line} />
     </div>
   );
@@ -39,11 +40,11 @@ export default function ElegantSerifTemplate({ data, sectionOrder, accentColor }
   return (
     <div style={{ fontFamily: serif, color: '#2b2b2b', padding: '50px 64px', fontSize: 12.5, lineHeight: 1.6 }}>
       <div style={{ textAlign: 'left' }}>
-        <h1 style={{ fontSize: 36, fontStyle: 'italic', letterSpacing: 2, color: ACCENT, margin: 0, fontWeight: 500 }}>
+        <FitText as="h1" size={36} wrap style={{ fontStyle: 'italic', letterSpacing: 2, color: ACCENT, margin: 0, fontWeight: 500 }}>
           {fullName(contact)}
-        </h1>
+        </FitText>
         {contact.jobTitle && <div style={{ fontSize: 13, fontStyle: 'italic', color: '#555', marginTop: 4 }}>{contact.jobTitle}</div>}
-        <div style={{ fontSize: 11.5, color: '#555', marginTop: 8 }}>{contactItems(contact).join('  —  ')}</div>
+        <ContactRow items={contactEntries(contact)} sep="—" style={{ fontSize: 11.5, color: '#555', marginTop: 8 }} />
       </div>
 
       {inOrder(sectionOrder, {
@@ -73,7 +74,7 @@ export default function ElegantSerifTemplate({ data, sectionOrder, accentColor }
             {data.education.map((e) => (
               <div key={e.id} className="resume-entry" style={{ marginBottom: 7, textAlign: 'left' }}>
                 <TitleRow title={degreeLine(e) || e.institution} dates={range(e.startDate, e.endDate, e.currentlyStudying)} />
-                <div style={{ fontStyle: 'italic', color: '#444' }}>{[degreeLine(e) && e.institution, e.location, e.score && `GPA ${e.score}`].filter(Boolean).join(', ')}</div>
+                <div style={{ fontStyle: 'italic', color: '#444' }}>{[degreeLine(e) && e.institution, e.location, scoreText(e.score)].filter(Boolean).join(', ')}</div>
               </div>
             ))}
           </>
@@ -95,7 +96,7 @@ export default function ElegantSerifTemplate({ data, sectionOrder, accentColor }
             {data.projects.map((p) => (
               <div key={p.id} className="resume-entry" style={{ marginBottom: 9 }}>
                 <TitleRow
-                  title={<>{p.name}{p.url ? <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#555' }}> — {cleanUrl(p.url)}</span> : null}</>}
+                  title={<>{p.name}{p.url ? <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#555', overflowWrap: 'anywhere' }}> — <Link href={toHref(p.url)}>{cleanUrl(p.url)}</Link></span> : null}</>}
                   dates={range(p.startDate, p.endDate)}
                 />
                 <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
@@ -132,11 +133,8 @@ export default function ElegantSerifTemplate({ data, sectionOrder, accentColor }
             <Ornament title="Volunteer Experience" accent={ACCENT} />
             {data.volunteer.map((v) => (
               <div key={v.id} className="resume-entry" style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 700 }}>{v.organization}</span>
-                  <span style={DATE}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
-                </div>
-                <div style={{ fontStyle: 'italic', color: '#555' }}>{v.role}</div>
+                <TitleRow title={v.organization || v.role} dates={range(v.startDate, v.endDate, v.currentlyVolunteering)} />
+                {v.organization && v.role && <div style={{ fontStyle: 'italic', color: '#555' }}>{v.role}</div>}
                 <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                   {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                 </ul>

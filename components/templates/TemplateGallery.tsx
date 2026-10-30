@@ -8,15 +8,14 @@ import { DEMO_RESUME_DATA } from '@/lib/store/slices/defaultData';
 import { DEFAULT_SECTION_ORDER } from '@/lib/store/slices/globalSlice';
 import ResumePreview from '@/components/builder/ResumePreview';
 import FitPreview from '@/components/builder/FitPreview';
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE } from '@/components/resume-templates/shared';
 import { TEMPLATE_META } from '@/lib/templates';
 import type { TemplateId, ResumeData } from '@/lib/types';
 import type { StoreState } from '@/lib/store/slices/types';
 
-// The live preview renders an A4 sheet at 794px wide. We scale it to fit cards.
-const PAGE_W = 794;
+// Thumbnails are the live preview scaled down to the card width — scaled from
+// the selected paper stock, since Letter is wider (and shorter) than A4.
 const THUMB_W = 260;
-const THUMB_H = 367; // A4 ratio (794 : 1123)
-const THUMB_SCALE = THUMB_W / PAGE_W;
 
 function hasRealContent(data: ResumeData): boolean {
   return Boolean(
@@ -38,12 +37,14 @@ interface PreviewProps {
 
 /** A non-interactive, scaled-down live preview used as a gallery thumbnail. */
 function Thumbnail({ templateId, data, sectionOrder, hiddenSections, builderDesign }: PreviewProps) {
+  const page = PAGE_SIZES[builderDesign?.pageSize ?? DEFAULT_PAGE_SIZE] ?? PAGE_SIZES[DEFAULT_PAGE_SIZE];
+  const scale = THUMB_W / page.w;
   return (
     <div
-      style={{ width: THUMB_W, height: THUMB_H, overflow: 'hidden', position: 'relative' }}
+      style={{ width: THUMB_W, height: Math.round(page.h * scale), overflow: 'hidden', position: 'relative' }}
       className="pointer-events-none bg-white"
     >
-      <div style={{ transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left', width: PAGE_W }}>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: page.w }}>
         <ResumePreview
           data={data}
           templateId={templateId}

@@ -2,8 +2,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Phone, Mail, MapPin, Link2 } from 'lucide-react';
 import {
   TemplateProps, fullName, range, bullets, degreeLine, has, cleanUrl, inOrder, customSections,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, contactEntries, scoreText, toHref, TRACKING,
 } from './shared';
+import { FitText, Link } from './parts';
 
 // Template 16 — SIGNATURE HEADER: centered name, icon contact row, accent section
 // headings over a hairline rule, and a solid color bar anchoring the foot of the page.
@@ -19,11 +20,11 @@ const MUTED = '#6b7280';
 const RULE = '#e5e7eb';
 const BAR_H = 12;
 
-function ContactItem({ icon, text }: { icon: ReactNode; text: string }) {
+function ContactItem({ icon, text, href }: { icon: ReactNode; text: string; href?: string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
       {icon}
-      {text}
+      <Link href={href}>{text}</Link>
     </span>
   );
 }
@@ -33,9 +34,9 @@ function EntryHead({ title, dates, sub }: { title?: string; dates?: string; sub?
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16 }}>
-        <span style={{ fontWeight: 700, fontSize: 14, color: INK }}>{title}</span>
+        <span style={{ fontWeight: 700, fontSize: 14, color: INK, minWidth: 0 }}>{title}</span>
         {dates && (
-          <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{dates}</span>
+          <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{dates}</span>
         )}
       </div>
       {sub && <div style={{ fontSize: 13, color: BODY, marginTop: 1 }}>{sub}</div>}
@@ -93,7 +94,7 @@ export default function SignatureHeaderTemplate({ data, sectionOrder, accentColo
   const { contact } = data;
   const ACCENT = accentColor || '#3f3f46';
   const heading: CSSProperties = {
-    fontSize: 12.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.6, color: ACCENT,
+    fontSize: 12.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: TRACKING, color: ACCENT,
     paddingBottom: 4, borderBottom: `1px solid ${RULE}`, margin: '0 0 10px',
   };
   // Space between entries goes above each one (not below), so the last entry
@@ -102,16 +103,11 @@ export default function SignatureHeaderTemplate({ data, sectionOrder, accentColo
   const gap = <div style={{ height: 18 }} />;
 
   const iconProps = { size: 11, color: MUTED, strokeWidth: 2 } as const;
-  const contactItems = [
-    contact.phone && <ContactItem key="phone" icon={<Phone {...iconProps} />} text={contact.phone} />,
-    contact.email && <ContactItem key="email" icon={<Mail {...iconProps} />} text={contact.email} />,
-    (contact.city || contact.country) && (
-      <ContactItem key="loc" icon={<MapPin {...iconProps} />} text={[contact.city, contact.country].filter(Boolean).join(', ')} />
-    ),
-    contact.linkedin && <ContactItem key="li" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.linkedin)} />,
-    contact.github && <ContactItem key="gh" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.github)} />,
-    contact.website && <ContactItem key="web" icon={<Link2 {...iconProps} />} text={cleanUrl(contact.website)} />,
-  ].filter(Boolean);
+  const ICON = { phone: Phone, email: Mail, location: MapPin } as const;
+  const contactItems = contactEntries(contact, ['phone', 'email', 'location', 'linkedin', 'github', 'website']).map((c) => {
+    const Icon = ICON[c.key as keyof typeof ICON] ?? Link2;
+    return <ContactItem key={c.key} icon={<Icon {...iconProps} />} text={c.text} href={c.href} />;
+  });
 
   // Padding lives on this root (not an inner wrapper) because the Spacing control
   // overrides the root's padding; the foot bar is absolutely positioned so it
@@ -123,9 +119,9 @@ export default function SignatureHeaderTemplate({ data, sectionOrder, accentColo
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, lineHeight: 1.15, margin: 0, color: INK }}>
+        <FitText as="h1" size={30} wrap style={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, lineHeight: 1.15, margin: 0, color: INK }}>
           {fullName(contact)}
-        </h1>
+        </FitText>
         {contact.jobTitle && (
           <div style={{ fontSize: 15, fontWeight: 500, color: ACCENT, marginTop: 4, letterSpacing: 0.2 }}>{contact.jobTitle}</div>
         )}
@@ -152,7 +148,7 @@ export default function SignatureHeaderTemplate({ data, sectionOrder, accentColo
                 <EntryHead
                   title={degreeLine(e) || e.institution}
                   dates={range(e.startDate, e.endDate, e.currentlyStudying)}
-                  sub={<OrgLine org={degreeLine(e) ? e.institution : undefined} place={[e.location, e.score && `GPA ${e.score}`].filter(Boolean).join('  ·  ')} />}
+                  sub={<OrgLine org={degreeLine(e) ? e.institution : undefined} place={[e.location, scoreText(e.score)].filter(Boolean).join('  ·  ')} />}
                 />
               </div>
             ))}
@@ -191,7 +187,7 @@ export default function SignatureHeaderTemplate({ data, sectionOrder, accentColo
                 <EntryHead
                   title={p.name}
                   dates={range(p.startDate, p.endDate)}
-                  sub={p.url ? <span style={{ color: MUTED, fontSize: 12 }}>{cleanUrl(p.url)}</span> : undefined}
+                  sub={p.url ? <Link href={toHref(p.url)} style={{ color: MUTED, fontSize: 12, overflowWrap: 'anywhere' }}>{cleanUrl(p.url)}</Link> : undefined}
                 />
                 <Bullets text={p.description} />
               </div>

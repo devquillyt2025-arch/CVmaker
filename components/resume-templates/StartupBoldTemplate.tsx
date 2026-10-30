@@ -1,27 +1,30 @@
 import type { CSSProperties } from 'react';
 import {
-  TemplateProps, fullName, contactItems, range, bullets, degreeLine, has, tint,
-  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections,
+  TemplateProps, fullName, contactEntries, range, bullets, degreeLine, has, tint, cleanUrl, toHref,
+  certMeta, courseMeta, awardMeta, pubMeta, languageLabel, inOrder, customSections, TRACKING,
 } from './shared';
+import { ContactRow, FitText, Link } from './parts';
 
 // Template 14 — STARTUP BOLD: huge name, thick rule, 40/60 two-column.
 const sans = '"Helvetica Neue", Arial, sans-serif';
+const titleRow: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 };
+const dates: CSSProperties = { fontSize: 11, color: '#666', whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function StartupBoldTemplate({ data, sectionOrder, accentColor }: TemplateProps) {
   const { contact } = data;
   const ACCENT = accentColor || '#f97316';
   const CHIP_BG = tint(ACCENT, 0.94);
-  const label: CSSProperties = { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3, color: ACCENT, margin: '0 0 9px' };
+  const label: CSSProperties = { fontSize: 11.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: TRACKING, color: ACCENT, margin: '0 0 9px' };
 
   return (
     <div style={{ fontFamily: sans, color: '#111', padding: '40px 46px', fontSize: 12.5, lineHeight: 1.5 }}>
       {/* Header */}
       <div style={{ borderBottom: `4px solid ${ACCENT}`, paddingBottom: 12, marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: ACCENT, margin: 0, lineHeight: 1 }}>{fullName(contact)}</h1>
+          <FitText as="h1" size={40} wrap style={{ fontWeight: 900, color: ACCENT, margin: 0, lineHeight: 1, minWidth: 0 }}>{fullName(contact)}</FitText>
           {contact.jobTitle && <span style={{ fontSize: 13, color: '#666', fontWeight: 600 }}>{contact.jobTitle}</span>}
         </div>
-        <div style={{ fontSize: 11, color: '#666', marginTop: 8 }}>{contactItems(contact).join('   ·   ')}</div>
+        <ContactRow items={contactEntries(contact)} sep={<span style={{ margin: '0 3px' }}>·</span>} style={{ fontSize: 11, color: '#666', marginTop: 8 }} />
       </div>
 
       {data.summary && <p style={{ margin: '0 0 18px', color: '#333' }}>{data.summary}</p>}
@@ -45,8 +48,8 @@ export default function StartupBoldTemplate({ data, sectionOrder, accentColor }:
                 <div className="resume-heading" style={label}>Education</div>
                 {data.education.map((e) => (
                   <div key={e.id} className="resume-entry" style={{ marginBottom: 9 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{degreeLine(e)}</div>
-                    <div style={{ fontSize: 11, color: '#666' }}>{e.institution}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{degreeLine(e) || e.institution}</div>
+                    {degreeLine(e) && e.institution && <div style={{ fontSize: 11, color: '#666' }}>{e.institution}</div>}
                     <div style={{ fontSize: 10.5, color: '#666' }}>{range(e.startDate, e.endDate, e.currentlyStudying)}</div>
                   </div>
                 ))}
@@ -75,7 +78,7 @@ export default function StartupBoldTemplate({ data, sectionOrder, accentColor }:
                 {data.projects.map((p) => (
                   <div key={p.id} className="resume-entry" style={{ marginBottom: 9 }}>
                     <div style={{ fontSize: 12, fontWeight: 700 }}>{p.name}</div>
-                    {p.url && <div style={{ fontSize: 10.5, color: ACCENT }}>{p.url}</div>}
+                    {p.url && <div style={{ fontSize: 10.5, color: ACCENT, overflowWrap: 'anywhere' }}><Link href={toHref(p.url)}>{cleanUrl(p.url)}</Link></div>}
                     <ul style={{ margin: '3px 0 0', paddingLeft: 15, color: '#444' }}>
                       {bullets(p.description).map((b, i) => <li key={i} style={{ fontSize: 11, marginBottom: 2 }}>{b}</li>)}
                     </ul>
@@ -94,11 +97,11 @@ export default function StartupBoldTemplate({ data, sectionOrder, accentColor }:
                 <div className="resume-heading" style={label}>Experience</div>
                 {data.experience.map((e) => (
                   <div key={e.id} className="resume-entry" style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 800 }}>{e.position}</span>
-                      <span style={{ fontSize: 11, color: '#666' }}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
+                    <div style={titleRow}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800 }}>{e.position || e.company}</span>
+                      <span style={dates}>{range(e.startDate, e.endDate, e.currentlyWorking)}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: ACCENT, fontWeight: 700 }}>{[e.company, e.location].filter(Boolean).join(' · ')}</div>
+                    <div style={{ fontSize: 12, color: ACCENT, fontWeight: 700 }}>{[e.position && e.company, e.location].filter(Boolean).join(' · ')}</div>
                     <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#333' }}>
                       {bullets(e.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                     </ul>
@@ -111,11 +114,11 @@ export default function StartupBoldTemplate({ data, sectionOrder, accentColor }:
                 <div className="resume-heading" style={label}>Volunteer Experience</div>
                 {data.volunteer.map((v) => (
                   <div key={v.id} className="resume-entry" style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 800 }}>{v.role}</span>
-                      <span style={{ fontSize: 11, color: '#666' }}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
+                    <div style={titleRow}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800 }}>{v.role || v.organization}</span>
+                      <span style={dates}>{range(v.startDate, v.endDate, v.currentlyVolunteering)}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: ACCENT, fontWeight: 700 }}>{v.organization}</div>
+                    {v.role && v.organization && <div style={{ fontSize: 12, color: ACCENT, fontWeight: 700 }}>{v.organization}</div>}
                     <ul style={{ margin: '4px 0 0', paddingLeft: 17, color: '#333' }}>
                       {bullets(v.description).map((b, i) => <li key={i} style={{ marginBottom: 2 }}>{b}</li>)}
                     </ul>
